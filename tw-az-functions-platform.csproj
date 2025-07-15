@@ -1,26 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
-    <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>az_tw_website_functions</RootNamespace>
+    <RootNamespace>tw_az_functions_platform</RootNamespace>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.2" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.1.0" />
-  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="SharedStorage/SharedStorage.csproj" />
     <ProjectReference Include="Utils/Utils.csproj" />
   </ItemGroup>
+  
+  <!-- Exclude Functions source code from this project -->
   <ItemGroup>
-    <Compile Remove="SharedStorage/**/*.cs" />
-    <Compile Remove="Utils/**/*.cs" />
-    <Compile Remove="src/BlogPosts/BlogPosts/**/*.cs" />
+    <Compile Remove="src/**/*.cs" />
   </ItemGroup>
 </Project>
