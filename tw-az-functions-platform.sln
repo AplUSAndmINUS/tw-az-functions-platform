@@ -2,7 +2,7 @@
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "az-tw-website-functions", "az-tw-website-functions.csproj", "{04B177E8-4653-0667-E701-D662BA07D340}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tw-az-functions-platform", "tw-az-functions-platform.csproj", "{04B177E8-4653-0667-E701-D662BA07D340}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedStorage", "SharedStorage\SharedStorage.csproj", "{DF23F9E0-4026-4E28-BAA9-74EE104CA28E}"
 EndProject
