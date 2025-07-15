@@ -3,14 +3,15 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using Utils;
+using Utils.Validation;
 
 namespace BlogPosts
 {
   public class PlaceholderFunction
   {
-    private readonly AppInsightsLogger<PlaceholderFunction> _appLogger;
+    private readonly AppInsightsLogger _appLogger;
     private readonly IAPIKeyValidator _apiKeyValidator;
-    public PlaceholderFunction(AppInsightsLogger<PlaceholderFunction> appLogger, IAPIKeyValidator apiKeyValidator)
+    public PlaceholderFunction(AppInsightsLogger appLogger, IAPIKeyValidator apiKeyValidator)
     {
       _appLogger = appLogger;
       _apiKeyValidator = apiKeyValidator;
@@ -20,8 +21,6 @@ namespace BlogPosts
     public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
       _appLogger.LogInformation("Ping function triggered.");
-
-      var apiKey = req.Headers.GetValues();
 
       var response = req.CreateResponse(HttpStatusCode.OK);
       response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
