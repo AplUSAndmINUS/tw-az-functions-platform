@@ -44,7 +44,7 @@ public class TableStorageService : ITableStorageService
         }
     }
 
-    public async Task<TablePageResult>GetEntitiesAsync(
+    public async Task<TablePageResult> GetEntitiesAsync(
         string tableName,
         string? filter = null,
         int pageSize = 25,
@@ -84,10 +84,10 @@ public class TableStorageService : ITableStorageService
 
     public async Task UpsertEntityAsync(string tableName, ITableEntity entity)
     {
-        var client = _tableServiceClient.GetTableClient(tableName);
-
         // Validate table name
         TableNameValidator.ValidateTableName(tableName);
+        
+        var client = _tableServiceClient.GetTableClient(tableName);
 
         try
         {
@@ -104,10 +104,10 @@ public class TableStorageService : ITableStorageService
 
     public async Task DeleteEntityAsync(string tableName, string partitionKey, string rowKey)
     {
-        var client = _tableServiceClient.GetTableClient(tableName);
-
         // Validate table name
         TableNameValidator.ValidateTableName(tableName);
+        
+        var client = _tableServiceClient.GetTableClient(tableName);
 
         try
         {
@@ -129,5 +129,35 @@ public class TableStorageService : ITableStorageService
     public TableClient GetTableClient(string tableName)
     {
         return _tableServiceClient.GetTableClient(tableName);
+    }
+
+    public async Task UpsertEntityWithBlobAsync(string tableName, ITableEntity entity, string? blobUrl = null)
+    {
+        // Validate table name
+        TableNameValidator.ValidateTableName(tableName);
+        
+        var client = _tableServiceClient.GetTableClient(tableName);
+
+        // Add blob URL to entity if provided
+        if (blobUrl != null && entity is TableEntity tableEntity)
+        {
+            tableEntity["BlobUrl"] = blobUrl;
+        }
+
+        try
+        {
+            _logger.LogInformation("Upserting entity with blob into table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}, BlobUrl: {BlobUrl}", 
+                tableName, entity.PartitionKey, entity.RowKey, blobUrl ?? "None");
+            
+            await client.UpsertEntityAsync(entity);
+            
+            _logger.LogInformation("Entity with blob upserted successfully into table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}", 
+                tableName, entity.PartitionKey, entity.RowKey);
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError(ex, "Failed to upsert entity with blob into table {TableName}", tableName);
+            throw;
+        }
     }
 }

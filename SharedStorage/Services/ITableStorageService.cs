@@ -16,4 +16,5 @@ public interface ITableStorageService
     Task<TablePageResult> GetEntitiesAsync(string tableName, string? filter = null, int pageSize = 25, string? continuationToken = null);
     Task UpsertEntityAsync(string tableName, ITableEntity entity);
     Task DeleteEntityAsync(string tableName, string partitionKey, string rowKey);
+    Task UpsertEntityWithBlobAsync(string tableName, ITableEntity entity, string? blobUrl = null);
 }
