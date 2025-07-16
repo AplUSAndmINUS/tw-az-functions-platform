@@ -68,6 +68,7 @@
 // }
 
 using SharedStorage.Services;
+using SharedStorage.Extensions;
 using Utils;
 using Utils.Validation;
 using Microsoft.ApplicationInsights;
@@ -85,63 +86,15 @@ public class Program
             .ConfigureServices((context, services) =>
             {
                 var configuration = context.Configuration;
-                var storageAccountName = configuration["StorageAccountName"]
-                    ?? Environment.GetEnvironmentVariable("StorageAccountName")
-                    ?? "aztwwebsitestorage"; // Default value if not set
-
-                var cosmosAccountName = configuration["CosmosAccountName"]
-                    ?? Environment.GetEnvironmentVariable("CosmosAccountName")
-                    ?? "aztwwebsitecosmosdb"; // Default value if not set
-
-                if (string.IsNullOrWhiteSpace(storageAccountName))
-                    throw new InvalidOperationException("Missing 'StorageAccountName' in environment or config.");
-
-                if (string.IsNullOrWhiteSpace(cosmosAccountName))
-                    throw new InvalidOperationException("Missing 'CosmosAccountName' in environment or config.");
-
-                // Register core services first so they can be injected into other services
-                services.AddSingleton<IImageService, ImageConversionService>();
-                services.AddSingleton<IThumbnailService, ThumbnailService>();
-                services.AddSingleton<IDocumentConversionService, DocumentConversionService>();
-
-                // Register BlobStorageService
-                services.AddSingleton<IBlobStorageService>(sp =>
-                {
-                    var logger = sp.GetRequiredService<ILogger<BlobStorageService>>();
-                    var imageConversionService = sp.GetRequiredService<IImageService>();
-                    var thumbnailService = sp.GetRequiredService<IThumbnailService>();
-
-                    return new BlobStorageService(storageAccountName!, logger, imageConversionService, thumbnailService);
-                });
-
-                // Register TableStorageService
-                services.AddSingleton<ITableStorageService>(sp =>
-                {
-                    var logger = sp.GetRequiredService<ILogger<TableStorageService>>();
-                    return new TableStorageService(storageAccountName!, logger);
-                });
-
-                // Register CosmosDbService
-                services.AddSingleton<ICosmosDbService>(sp =>
-                {
-                    var logger = sp.GetRequiredService<ILogger<CosmosDbService>>();
-                    return new CosmosDbService(cosmosAccountName!, logger);
-                });
-
-                // Register MediaHandler
-                services.AddSingleton<IMediaHandler>(sp =>
-                {
-                    var blobService = sp.GetRequiredService<IBlobStorageService>();
-                    var imageService = sp.GetRequiredService<IImageService>();
-                    var thumbnailService = sp.GetRequiredService<IThumbnailService>();
-                    return new MediaHandler(blobService, imageService, thumbnailService);
-                });
+                
+                // Use the new extension method to register all shared storage services
+                services.AddSharedStorageServices(configuration);
 
                 // Register APIKeyValidator
                 services.AddSingleton<IAPIKeyValidator>(sp =>
                 {
                     var validApiKey = configuration["X_API_ENVIRONMENT_KEY"]
-                        ?? Environment.GetEnvironmentVariable("X_API_ENVIRONMENT_KEY");
+                        ?? System.Environment.GetEnvironmentVariable("X_API_ENVIRONMENT_KEY");
                     if (string.IsNullOrWhiteSpace(validApiKey))
                         throw new InvalidOperationException("Missing X_API_ENVIRONMENT_KEY in configuration.");
 
