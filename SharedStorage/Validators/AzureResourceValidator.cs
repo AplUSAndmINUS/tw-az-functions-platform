@@ -16,9 +16,12 @@ public static class AzureResourceValidator
       {
           // Safe, lightweight check — will throw 404 if table doesn't exist
           var enumerator = client.QueryAsync<TableEntity>().GetAsyncEnumerator();
-          if (!await enumerator.MoveNextAsync())
+          await using (enumerator)
           {
-              // Table exists but no rows—still valid!
+              if (!await enumerator.MoveNextAsync())
+              {
+                  // Table exists but no rows—still valid!
+              }
           }
       }
       catch (RequestFailedException ex) when (ex.Status == 404)

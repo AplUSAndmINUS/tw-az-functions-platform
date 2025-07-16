@@ -24,10 +24,10 @@ public class TableStorageService : ITableStorageService
 
     public async Task<TableEntity?> GetEntityAsync(string tableName, string partitionKey, string rowKey)
     {
+        // Validate table name and existence
+        await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
+        
         var client = _tableServiceClient.GetTableClient(tableName);
-
-        // Validate table name
-        TableNameValidator.ValidateTableName(tableName);
 
         try
         {
@@ -44,13 +44,14 @@ public class TableStorageService : ITableStorageService
         }
     }
 
-    public async Task<TablePageResult>GetEntitiesAsync(
+    public async Task<TablePageResult> GetEntitiesAsync(
         string tableName,
         string? filter = null,
         int pageSize = 25,
         string? continuationToken = null)
     {
-        TableNameValidator.ValidateTableName(tableName);
+        // Validate table name and existence
+        await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
         var client = _tableServiceClient.GetTableClient(tableName);
 
         _logger.LogInformation("Retrieving entities from table {TableName} with filter {Filter} and page size {PageSize} token {Token}", tableName, filter, pageSize, continuationToken);
@@ -84,10 +85,10 @@ public class TableStorageService : ITableStorageService
 
     public async Task UpsertEntityAsync(string tableName, ITableEntity entity)
     {
+        // Validate table name and existence
+        await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
+        
         var client = _tableServiceClient.GetTableClient(tableName);
-
-        // Validate table name
-        TableNameValidator.ValidateTableName(tableName);
 
         try
         {
@@ -104,10 +105,10 @@ public class TableStorageService : ITableStorageService
 
     public async Task DeleteEntityAsync(string tableName, string partitionKey, string rowKey)
     {
+        // Validate table name and existence
+        await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
+        
         var client = _tableServiceClient.GetTableClient(tableName);
-
-        // Validate table name
-        TableNameValidator.ValidateTableName(tableName);
 
         try
         {
