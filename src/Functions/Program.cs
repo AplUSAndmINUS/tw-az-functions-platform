@@ -89,12 +89,20 @@ public class Program
                     ?? Environment.GetEnvironmentVariable("StorageAccountName")
                     ?? "aztwwebsitestorage"; // Default value if not set
 
+                var cosmosAccountName = configuration["CosmosAccountName"]
+                    ?? Environment.GetEnvironmentVariable("CosmosAccountName")
+                    ?? "aztwwebsitecosmosdb"; // Default value if not set
+
                 if (string.IsNullOrWhiteSpace(storageAccountName))
                     throw new InvalidOperationException("Missing 'StorageAccountName' in environment or config.");
 
-                // Register these services first so they can be injected into BlobStorageService
+                if (string.IsNullOrWhiteSpace(cosmosAccountName))
+                    throw new InvalidOperationException("Missing 'CosmosAccountName' in environment or config.");
+
+                // Register core services first so they can be injected into other services
                 services.AddSingleton<IImageService, ImageConversionService>();
                 services.AddSingleton<IThumbnailService, ThumbnailService>();
+                services.AddSingleton<IDocumentConversionService, DocumentConversionService>();
 
                 // Register BlobStorageService
                 services.AddSingleton<IBlobStorageService>(sp =>
@@ -111,6 +119,22 @@ public class Program
                 {
                     var logger = sp.GetRequiredService<ILogger<TableStorageService>>();
                     return new TableStorageService(storageAccountName!, logger);
+                });
+
+                // Register CosmosDbService
+                services.AddSingleton<ICosmosDbService>(sp =>
+                {
+                    var logger = sp.GetRequiredService<ILogger<CosmosDbService>>();
+                    return new CosmosDbService(cosmosAccountName!, logger);
+                });
+
+                // Register MediaHandler
+                services.AddSingleton<IMediaHandler>(sp =>
+                {
+                    var blobService = sp.GetRequiredService<IBlobStorageService>();
+                    var imageService = sp.GetRequiredService<IImageService>();
+                    var thumbnailService = sp.GetRequiredService<IThumbnailService>();
+                    return new MediaHandler(blobService, imageService, thumbnailService);
                 });
 
                 // Register APIKeyValidator
@@ -134,7 +158,7 @@ public class Program
             .ConfigureFunctionsWorkerDefaults()
             .Build();
 
-        Console.WriteLine("az_tw_website_functions function app is starting...");
+        Console.WriteLine("Azure Functions PaaS Platform is starting...");
 
         host.Run();
     }
