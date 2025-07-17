@@ -18,7 +18,21 @@ public class TableStorageService : ITableStorageService
         _logger.LogInformation("Creating table client for {Table}", storageAccountName ?? "unknown");
 
         var endpoint = $"https://{storageAccountName}.table.core.windows.net";
-        _tableServiceClient = new TableServiceClient(new Uri(endpoint), new DefaultAzureCredential());
+        
+        // Create DefaultAzureCredentialOptions with modern authentication settings
+        var options = new DefaultAzureCredentialOptions
+        {
+            ExcludeSharedTokenCacheCredential = true,
+            ExcludeVisualStudioCredential = true,
+            // Modern approach: Include only the credentials we need instead of excluding ones we don't
+            ExcludeAzureCliCredential = false,
+            ExcludeManagedIdentityCredential = false,
+            ExcludeEnvironmentCredential = false,
+            // All other credential types are excluded by default
+            DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+        };
+        
+        _tableServiceClient = new TableServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
         _logger.LogInformation("Table client created for {Endpoint}", endpoint);
     }
 
