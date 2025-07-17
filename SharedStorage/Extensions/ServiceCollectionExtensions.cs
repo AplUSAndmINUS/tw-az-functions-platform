@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharedStorage.Services;
 using SharedStorage.Services.Media.Handlers;
+using SharedStorage.Services.Email;
+using SharedStorage.Environment;
+using Utils;
 
 namespace SharedStorage.Extensions;
 
@@ -86,6 +89,15 @@ public static class ServiceCollectionExtensions
             var thumbnailService = sp.GetRequiredService<IThumbnailService>();
             return new MediaHandler(blobService, imageService, thumbnailService);
         });
+
+        // Register email service
+        services.AddScoped<IEmailService, EmailService>();
+
+        // Register environment services
+        services.AddScoped<IAppMode, DefaultAppMode>();
+
+        // Register AppInsightsLogger
+        services.AddSingleton(typeof(IAppInsightsLogger<>), typeof(AppInsightsLogger<>));
 
         return services;
     }
