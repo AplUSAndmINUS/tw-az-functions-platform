@@ -28,12 +28,11 @@ public class BlobStorageService : IBlobStorageService
 
         var endpoint = $"https://{storageAccountName}.blob.core.windows.net";
         
-        // Create DefaultAzureCredentialOptions with modern authentication settings
+        // Modern approach: Include only the credentials we need instead of excluding ones we don't
         var options = new DefaultAzureCredentialOptions
         {
             ExcludeSharedTokenCacheCredential = true,
             ExcludeVisualStudioCredential = true,
-            // Modern approach: Include only the credentials we need instead of excluding ones we don't
             ExcludeAzureCliCredential = false,
             ExcludeManagedIdentityCredential = false,
             ExcludeEnvironmentCredential = false,
