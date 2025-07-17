@@ -20,28 +20,44 @@ public class BlobStorageService : IBlobStorageService
         string storageAccountName,
         ILogger<BlobStorageService> logger,
         IImageService imageConversionService,
-        IThumbnailService thumbnailService)
+        IThumbnailService thumbnailService,
+        string? connectionString = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _logger.LogInformation("Creating blob storage client for {StorageAccount}", storageAccountName ?? "unknown");
+        if (string.IsNullOrWhiteSpace(storageAccountName))
+            throw new ArgumentException("Storage account name cannot be null or empty.", nameof(storageAccountName));
 
-        var endpoint = $"https://{storageAccountName}.blob.core.windows.net";
-        
-        // Modern approach: Include only the credentials we need instead of excluding ones we don't
-        var options = new DefaultAzureCredentialOptions
+        _logger.LogInformation("Creating blob storage client for {StorageAccount}", storageAccountName);
+
+        if (!string.IsNullOrWhiteSpace(connectionString))
         {
-            ExcludeSharedTokenCacheCredential = true,
-            ExcludeVisualStudioCredential = true,
-            ExcludeAzureCliCredential = false,
-            ExcludeManagedIdentityCredential = false,
-            ExcludeEnvironmentCredential = false,
-            // All other credential types are excluded by default
-            DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
-        };
+            // Use connection string authentication
+            _logger.LogInformation("Using connection string authentication for blob storage");
+            _blobServiceClient = new BlobServiceClient(connectionString);
+        }
+        else
+        {
+            // Use managed identity authentication
+            _logger.LogInformation("Using managed identity authentication for blob storage");
+            var endpoint = $"https://{storageAccountName}.blob.core.windows.net";
+            
+            // Modern approach: Include only the credentials we need instead of excluding ones we don't
+            var options = new DefaultAzureCredentialOptions
+            {
+                ExcludeSharedTokenCacheCredential = true,
+                ExcludeVisualStudioCredential = true,
+                ExcludeAzureCliCredential = false,
+                ExcludeManagedIdentityCredential = false,
+                ExcludeEnvironmentCredential = false,
+                // All other credential types are excluded by default
+                DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+            };
+            
+            _blobServiceClient = new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
+        }
         
-        _blobServiceClient = new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
-        _logger.LogInformation("Blob storage client created for {Endpoint}", endpoint);
+        _logger.LogInformation("Blob storage client created successfully");
 
         _imageConversionService = imageConversionService ?? throw new ArgumentNullException(nameof(imageConversionService));
         _thumbnailService = thumbnailService ?? throw new ArgumentNullException(nameof(thumbnailService));
