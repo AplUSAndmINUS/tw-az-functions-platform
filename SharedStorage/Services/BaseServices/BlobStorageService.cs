@@ -27,7 +27,20 @@ public class BlobStorageService : IBlobStorageService
         _logger.LogInformation("Creating blob storage client for {StorageAccount}", storageAccountName ?? "unknown");
 
         var endpoint = $"https://{storageAccountName}.blob.core.windows.net";
-        _blobServiceClient = new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential());
+        
+        // Modern approach: Include only the credentials we need instead of excluding ones we don't
+        var options = new DefaultAzureCredentialOptions
+        {
+            ExcludeSharedTokenCacheCredential = true,
+            ExcludeVisualStudioCredential = true,
+            ExcludeAzureCliCredential = false,
+            ExcludeManagedIdentityCredential = false,
+            ExcludeEnvironmentCredential = false,
+            // All other credential types are excluded by default
+            DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+        };
+        
+        _blobServiceClient = new BlobServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
         _logger.LogInformation("Blob storage client created for {Endpoint}", endpoint);
 
         _imageConversionService = imageConversionService ?? throw new ArgumentNullException(nameof(imageConversionService));
