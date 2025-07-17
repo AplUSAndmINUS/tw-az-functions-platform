@@ -23,14 +23,16 @@ Comprehensive storage service implementations:
 - **Services/** - Storage service implementations
   - **BaseServices/** - Core storage services
     - **BlobStorageService.cs** - Azure Blob Storage operations with image processing
-    - **TableStorageService.cs** - Azure Table Storage operations
+    - **TableStorageService.cs** - Azure Table Storage operations  
+    - **QueueStorageService.cs** - Azure Queue Storage operations with message management
   - **CosmosDbService.cs** - Azure CosmosDB operations
   - **ImageConversionService.cs** - Image format conversion (WebP optimization)
   - **ThumbnailService.cs** - Thumbnail generation for images
   - **MediaHandler.cs** - Media file processing and metadata extraction
   - **DocumentConversionService.cs** - Document format conversion and text extraction
-- **Validators/** - Azure resource validation
+- **Validators/** - Azure resource validation (blob containers, tables, queues)
 - **Environment/** - Environment-specific configuration
+- **Extensions/** - Service registration and dependency injection extensions
 
 ### 📁 **Utils/** - Utility Classes and Helpers
 Universal utilities and validation components:
@@ -58,6 +60,7 @@ Comprehensive test coverage for all platform components:
 ### 🗄️ **Storage Services**
 - **Blob Storage**: File upload/download with automatic image optimization
 - **Table Storage**: Structured data operations with pagination
+- **Queue Storage**: Message queue operations with full CRUD support
 - **CosmosDB**: NoSQL document database operations
 - **Media Processing**: Automatic image conversion to WebP format
 - **Thumbnail Generation**: Automatic thumbnail creation for uploaded images
@@ -69,10 +72,12 @@ Comprehensive test coverage for all platform components:
 - **File Type Detection**: Automatic content type detection and validation
 
 ### 🛡️ **Security & Validation**
-- API key validation with configurable requirements
-- Azure resource validation
-- Input sanitization and validation
-- Secure credential management with Azure Identity
+- **Dual Authentication**: Support for both Managed Identity and Connection String authentication
+- **Authentication Toggle**: Environment variable to switch between authentication methods
+- **API Key Validation**: Configurable API key requirements
+- **Azure Resource Validation**: Blob containers, tables, and queues
+- **Input Sanitization**: Comprehensive validation for all inputs
+- **Secure Credential Management**: Azure Identity integration
 
 ### 📊 **Monitoring & Logging**
 - Application Insights telemetry integration
@@ -99,6 +104,8 @@ Comprehensive test coverage for all platform components:
    ```
 
 2. **Configure your `local.settings.json` file in the `src/Functions` directory:**
+
+   **For Managed Identity (Default):**
    ```json
    {
        "IsEncrypted": false,
@@ -108,6 +115,22 @@ Comprehensive test coverage for all platform components:
            "StorageAccountName": "your-storage-account-name",
            "CosmosAccountName": "your-cosmos-account-name",
            "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum"
+       }
+   }
+   ```
+
+   **For Connection String Authentication:**
+   ```json
+   {
+       "IsEncrypted": false,
+       "Values": {
+           "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+           "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+           "StorageAccountName": "your-storage-account-name",
+           "CosmosAccountName": "your-cosmos-account-name",
+           "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum",
+           "USE_CONNECTION_STRING": "true",
+           "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net"
        }
    }
    ```
@@ -139,15 +162,46 @@ The platform can be deployed to Azure using standard Azure Functions deployment 
 
 ## Configuration
 
+### Authentication Methods
+
+The platform supports two authentication methods for Azure Storage services:
+
+#### 1. Managed Identity (Default)
+Uses Azure Managed Identity for authentication. This is the default and recommended approach for production deployments.
+
+```json
+{
+  "Values": {
+    "StorageAccountName": "your-storage-account-name"
+  }
+}
+```
+
+#### 2. Connection String
+Uses Azure Storage connection strings for authentication. Enable this by setting the environment variable:
+
+```json
+{
+  "Values": {
+    "USE_CONNECTION_STRING": "true",
+    "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net",
+    "StorageAccountName": "your-storage-account-name"
+  }
+}
+```
+
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `StorageAccountName` | Azure Storage Account name | Yes |
-| `CosmosAccountName` | Azure CosmosDB Account name | No* |
-| `X_API_ENVIRONMENT_KEY` | API key for authentication | Yes |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `StorageAccountName` | Azure Storage Account name | Yes | |
+| `CosmosAccountName` | Azure CosmosDB Account name | No* | |
+| `X_API_ENVIRONMENT_KEY` | API key for authentication | Yes | |
+| `USE_CONNECTION_STRING` | Toggle to use connection string auth | No | `false` |
+| `AZURE_STORAGE_CONNECTION_STRING` | Azure Storage connection string | No** | |
 
-*Required only if using CosmosDB services
+*Required only if using CosmosDB services  
+**Required only if `USE_CONNECTION_STRING` is set to `true`
 
 ### Service Registration
 
@@ -157,6 +211,7 @@ The platform automatically registers all services with dependency injection in `
 // Core services
 services.AddSingleton<IBlobStorageService, BlobStorageService>();
 services.AddSingleton<ITableStorageService, TableStorageService>();
+services.AddSingleton<IQueueStorageService, QueueStorageService>();
 services.AddSingleton<ICosmosDbService, CosmosDbService>();
 
 // Processing services
@@ -217,6 +272,40 @@ public class DataFunction
 }
 ```
 
+### Using Queue Storage Service
+
+```csharp
+public class QueueFunction
+{
+    private readonly IQueueStorageService _queueService;
+    
+    public QueueFunction(IQueueStorageService queueService)
+    {
+        _queueService = queueService;
+    }
+    
+    [Function("SendMessage")]
+    public async Task<HttpResponseData> SendMessage(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+    {
+        var message = await _queueService.SendMessageAsync("notifications", "Hello World!");
+        // Returns QueueMessage with MessageId, TimeNextVisible, and ExpirationTime
+    }
+    
+    [Function("ProcessMessages")]
+    public async Task<HttpResponseData> ProcessMessages(
+        [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+    {
+        var messages = await _queueService.ReceiveMessagesAsync("notifications", 10);
+        foreach (var message in messages)
+        {
+            // Process message
+            await _queueService.DeleteMessageAsync("notifications", message.MessageId, message.PopReceipt);
+        }
+    }
+}
+```
+
 ### Using Media Handler
 
 ```csharp
@@ -255,6 +344,8 @@ dotnet test --collect:"XPlat Code Coverage"
 - ✅ Document Conversion Services  
 - ✅ Media Handler Operations
 - ✅ Storage Service Interfaces
+- ✅ Queue Storage Service Operations
+- ✅ Queue Name Validation
 - ✅ Utility Functions
 
 ## Contributing
@@ -281,6 +372,8 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ## Security Best Practices
 
+- **Authentication Methods**: Choose between Managed Identity (recommended for production) or Connection String authentication
+- **Environment Variables**: Use environment variables for sensitive configuration like connection strings
 - **API Keys**: Use strong, randomly generated API keys (minimum 32 characters)
 - **Azure Identity**: Leverage managed identities for secure Azure service authentication
 - **Input Validation**: All inputs are validated before processing
