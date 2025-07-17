@@ -21,8 +21,9 @@ Contains the Azure Functions endpoint with isolated process model:
 ### 📁 **SharedStorage/** - Shared Storage Services Library
 Comprehensive storage service implementations:
 - **Services/** - Storage service implementations
-  - **BlobStorageService.cs** - Azure Blob Storage operations with image processing
-  - **TableStorageService.cs** - Azure Table Storage operations
+  - **BaseServices/** - Core storage services
+    - **BlobStorageService.cs** - Azure Blob Storage operations with image processing
+    - **TableStorageService.cs** - Azure Table Storage operations
   - **CosmosDbService.cs** - Azure CosmosDB operations
   - **ImageConversionService.cs** - Image format conversion (WebP optimization)
   - **ThumbnailService.cs** - Thumbnail generation for images
