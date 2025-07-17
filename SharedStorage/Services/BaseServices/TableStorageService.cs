@@ -24,6 +24,14 @@ public class TableStorageService : ITableStorageService
 
     public async Task<TableEntity?> GetEntityAsync(string tableName, string partitionKey, string rowKey)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+        if (string.IsNullOrWhiteSpace(partitionKey))
+            throw new ArgumentException("Partition key cannot be null or empty.", nameof(partitionKey));
+        if (string.IsNullOrWhiteSpace(rowKey))
+            throw new ArgumentException("Row key cannot be null or empty.", nameof(rowKey));
+
         // Validate table name and existence
         await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
         
@@ -34,7 +42,15 @@ public class TableStorageService : ITableStorageService
             _logger.LogInformation("Retrieving entity from table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}", tableName, partitionKey, rowKey);
             var response = await client.GetEntityIfExistsAsync<TableEntity>(partitionKey, rowKey);
 
-            _logger.LogInformation("Entity retrieved successfully from table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}", tableName, partitionKey, rowKey);
+            if (response.HasValue)
+            {
+                _logger.LogInformation("Entity retrieved successfully from table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}", tableName, partitionKey, rowKey);
+            }
+            else
+            {
+                _logger.LogInformation("Entity not found in table {TableName} with PartitionKey {PartitionKey} and RowKey {RowKey}", tableName, partitionKey, rowKey);
+            }
+            
             return response.Value;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
@@ -85,6 +101,12 @@ public class TableStorageService : ITableStorageService
 
     public async Task UpsertEntityAsync(string tableName, ITableEntity entity)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity), "Entity cannot be null.");
+
         // Validate table name and existence
         await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
         
@@ -105,6 +127,14 @@ public class TableStorageService : ITableStorageService
 
     public async Task DeleteEntityAsync(string tableName, string partitionKey, string rowKey)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(tableName))
+            throw new ArgumentException("Table name cannot be null or empty.", nameof(tableName));
+        if (string.IsNullOrWhiteSpace(partitionKey))
+            throw new ArgumentException("Partition key cannot be null or empty.", nameof(partitionKey));
+        if (string.IsNullOrWhiteSpace(rowKey))
+            throw new ArgumentException("Row key cannot be null or empty.", nameof(rowKey));
+
         // Validate table name and existence
         await AzureResourceValidator.ValidateAzureTableExistsAsync(_tableServiceClient, tableName);
         
