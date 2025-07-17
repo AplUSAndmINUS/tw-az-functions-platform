@@ -36,6 +36,12 @@ public class BlobStorageService : IBlobStorageService
 
     public async Task<BlobClient> GetBlobClientAsync(string containerName, string blobName)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(containerName))
+            throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
+        if (string.IsNullOrWhiteSpace(blobName))
+            throw new ArgumentException("Blob name cannot be null or empty.", nameof(blobName));
+
         // Validate container name
         await AzureResourceValidator.ValidateAzureBlobContainerExistsAsync(_blobServiceClient, containerName);
 
@@ -44,7 +50,7 @@ public class BlobStorageService : IBlobStorageService
             _logger.LogInformation("Retrieving blob client for container {ContainerName} and blob {BlobName}", containerName, blobName);
             var response = await _blobServiceClient.GetBlobContainerClient(containerName).GetBlobClient(blobName).ExistsAsync();
 
-            if (!response)
+            if (!response.Value)
             {
                 throw new ArgumentException($"Blob '{blobName}' does not exist in container '{containerName}'.", nameof(blobName));
             }
@@ -123,7 +129,7 @@ public class BlobStorageService : IBlobStorageService
         var blobClient = containerClient.GetBlobClient(blobName);
 
         var exists = await blobClient.ExistsAsync();
-        if (!exists)
+        if (!exists.Value)
         {
             throw new ArgumentException($"Blob '{blobName}' does not exist in container '{containerName}'.", nameof(blobName));
         }
@@ -160,6 +166,14 @@ public class BlobStorageService : IBlobStorageService
 
     public async Task<MediaReference> UploadBlobAsync(string containerName, string blobName, Stream content)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(containerName))
+            throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
+        if (string.IsNullOrWhiteSpace(blobName))
+            throw new ArgumentException("Blob name cannot be null or empty.", nameof(blobName));
+        if (content == null)
+            throw new ArgumentNullException(nameof(content), "Content stream cannot be null.");
+
         var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
         await AzureResourceValidator.ValidateAzureBlobContainerExistsAsync(_blobServiceClient, containerName);
         await containerClient.CreateIfNotExistsAsync();
@@ -168,10 +182,6 @@ public class BlobStorageService : IBlobStorageService
         try
         {
             var blobClient = containerClient.GetBlobClient(blobName);
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content), "Content stream cannot be null.");
-            }
 
             // Convert and reformat the image to WebP format
             var convertedParams = await _imageConversionService.ConvertToWebPAsync(content);
@@ -181,7 +191,7 @@ public class BlobStorageService : IBlobStorageService
             }
             convertedParams.Content.Position = 0; // Reset stream position to the beginning before upload
 
-            // Create a thumnail from the converted content
+            // Create a thumbnail from the converted content
             var thumbnail = await _thumbnailService.GenerateWebPThumbnailAsync(convertedParams.Content);
             if (thumbnail == null || thumbnail.Content == null)
             {
