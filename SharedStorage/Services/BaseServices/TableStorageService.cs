@@ -11,28 +11,43 @@ public class TableStorageService : ITableStorageService
     private readonly TableServiceClient _tableServiceClient;
     private readonly ILogger<TableStorageService> _logger;
     
-    public TableStorageService(string storageAccountName, ILogger<TableStorageService> logger)
+    public TableStorageService(string storageAccountName, ILogger<TableStorageService> logger, string? connectionString = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _logger.LogInformation("Creating table client for {Table}", storageAccountName ?? "unknown");
+        if (string.IsNullOrWhiteSpace(storageAccountName))
+            throw new ArgumentException("Storage account name cannot be null or empty.", nameof(storageAccountName));
 
-        var endpoint = $"https://{storageAccountName}.table.core.windows.net";
-        
-        // Modern approach: Include only the credentials we need instead of excluding ones we don't
-        var options = new DefaultAzureCredentialOptions
+        _logger.LogInformation("Creating table client for {StorageAccount}", storageAccountName);
+
+        if (!string.IsNullOrWhiteSpace(connectionString))
         {
-            ExcludeSharedTokenCacheCredential = true,
-            ExcludeVisualStudioCredential = true,
-            ExcludeAzureCliCredential = false,
-            ExcludeManagedIdentityCredential = false,
-            ExcludeEnvironmentCredential = false,
-            // All other credential types are excluded by default
-            DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
-        };
+            // Use connection string authentication
+            _logger.LogInformation("Using connection string authentication for table storage");
+            _tableServiceClient = new TableServiceClient(connectionString);
+        }
+        else
+        {
+            // Use managed identity authentication
+            _logger.LogInformation("Using managed identity authentication for table storage");
+            var endpoint = $"https://{storageAccountName}.table.core.windows.net";
+            
+            // Modern approach: Include only the credentials we need instead of excluding ones we don't
+            var options = new DefaultAzureCredentialOptions
+            {
+                ExcludeSharedTokenCacheCredential = true,
+                ExcludeVisualStudioCredential = true,
+                ExcludeAzureCliCredential = false,
+                ExcludeManagedIdentityCredential = false,
+                ExcludeEnvironmentCredential = false,
+                // All other credential types are excluded by default
+                DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+            };
+            
+            _tableServiceClient = new TableServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
+        }
         
-        _tableServiceClient = new TableServiceClient(new Uri(endpoint), new DefaultAzureCredential(options));
-        _logger.LogInformation("Table client created for {Endpoint}", endpoint);
+        _logger.LogInformation("Table storage client created successfully");
     }
 
     public async Task<TableEntity?> GetEntityAsync(string tableName, string partitionKey, string rowKey)

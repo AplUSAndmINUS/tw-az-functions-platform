@@ -18,6 +18,20 @@ public static class ServiceCollectionExtensions
             ?? System.Environment.GetEnvironmentVariable("CosmosAccountName")
             ?? "aztwwebsitecosmosdb"; // Default value if not set
 
+        // Check if we should use connection string authentication
+        var useConnectionString = configuration["USE_CONNECTION_STRING"]?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+            || System.Environment.GetEnvironmentVariable("USE_CONNECTION_STRING")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+        string? connectionString = null;
+        if (useConnectionString)
+        {
+            connectionString = configuration["AZURE_STORAGE_CONNECTION_STRING"]
+                ?? System.Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING");
+            
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("USE_CONNECTION_STRING is enabled but AZURE_STORAGE_CONNECTION_STRING is not provided.");
+        }
+
         if (string.IsNullOrWhiteSpace(storageAccountName))
             throw new InvalidOperationException("Missing 'StorageAccountName' in environment or config.");
 
@@ -40,14 +54,21 @@ public static class ServiceCollectionExtensions
             var imageConversionService = sp.GetRequiredService<IImageService>();
             var thumbnailService = sp.GetRequiredService<IThumbnailService>();
 
-            return new BlobStorageService(storageAccountName!, logger, imageConversionService, thumbnailService);
+            return new BlobStorageService(storageAccountName!, logger, imageConversionService, thumbnailService, connectionString);
         });
 
         // Register TableStorageService
         services.AddSingleton<ITableStorageService>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<TableStorageService>>();
-            return new TableStorageService(storageAccountName!, logger);
+            return new TableStorageService(storageAccountName!, logger, connectionString);
+        });
+
+        // Register QueueStorageService
+        services.AddSingleton<IQueueStorageService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<QueueStorageService>>();
+            return new QueueStorageService(storageAccountName!, logger, connectionString);
         });
 
         // Register CosmosDbService
