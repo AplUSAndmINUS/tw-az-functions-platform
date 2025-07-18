@@ -29,7 +29,7 @@ public class EmailService : IEmailService
         _smtpUsername = System.Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? throw new InvalidOperationException("SMTP_USERNAME environment variable is required");
         _smtpPassword = System.Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? throw new InvalidOperationException("SMTP_PASSWORD environment variable is required");
         _fromEmail = System.Environment.GetEnvironmentVariable("FROM_EMAIL") ?? _smtpUsername;
-        _fromName = System.Environment.GetEnvironmentVariable("FROM_NAME") ?? "TerenceWaters.com";
+        _fromName = System.Environment.GetEnvironmentVariable("FROM_NAME") ?? "{{YOUR_COMPANY_NAME}}";
         _toEmail = System.Environment.GetEnvironmentVariable("TO_EMAIL") ?? _smtpUsername;
     }
 
