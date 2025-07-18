@@ -52,9 +52,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IImageHandler, ImageHandler>();
         services.AddSingleton<IVideoHandler, VideoHandler>();
 
-        // Register content reference services
-        services.AddSingleton<IMediaServiceContentReferences, MediaServiceContentReferences>();
-
 
         // Register BlobStorageService
         services.AddSingleton<IBlobStorageService>(sp =>

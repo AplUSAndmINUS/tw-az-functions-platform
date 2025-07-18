@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SharedStorage.Services;
 
 namespace SharedStorage.Services.Media.Handlers;
 
@@ -27,7 +28,7 @@ public record VideoMetadata(
     int? Height = null,
     string? Duration = null,
     string? Codec = null,
-    double? FrameRate = null
+    double? FrameRate = null,
     string? Format = null
 );
 
@@ -49,9 +50,6 @@ public class VideoHandler : IVideoHandler
 
     public VideoHandler(
         IBlobStorageService blobStorageService,
-        ILogger<VideoHandler> logger)
-    {
-        _blobStorageService = blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
         IThumbnailService thumbnailService,
         ILogger<VideoHandler> logger)
     {
