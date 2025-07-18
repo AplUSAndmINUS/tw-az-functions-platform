@@ -17,6 +17,9 @@ public class MediaHandlersTests
     private readonly Mock<ILogger<ImageHandler>> _mockImageLogger;
     private readonly ImageHandler _imageHandler;
 
+    private readonly Mock<ILogger<VideoHandler>> _mockVideoLogger;
+    private readonly VideoHandler _videoHandler;
+
     public MediaHandlersTests()
     {
         // Document handler setup
@@ -40,6 +43,13 @@ public class MediaHandlersTests
             _mockThumbnailService.Object,
             _mockBlobService.Object,
             _mockImageLogger.Object
+        );
+
+        // Video handler setup
+        _mockVideoLogger = new Mock<ILogger<VideoHandler>>();
+        _videoHandler = new VideoHandler(
+            _mockBlobService.Object,
+            _mockVideoLogger.Object
         );
     }
 
@@ -73,12 +83,39 @@ public class MediaHandlersTests
 
     [Theory]
     [InlineData("video.mp4", "video/mp4")]
+    [InlineData("video.avi", "video/avi")]
+    [InlineData("video.mov", "video/mov")]
+    [InlineData("video.webm", "video/webm")]
+    public async Task VideoHandler_CanHandleAsync_ShouldReturnTrueForSupportedTypes(string fileName, string contentType)
+    {
+        // Act
+        var result = await _videoHandler.CanHandleAsync(fileName, contentType);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Theory]
+    [InlineData("video.mp4", "video/mp4")]
     [InlineData("audio.mp3", "audio/mp3")]
     [InlineData("unknown.xyz", "application/octet-stream")]
     public async Task DocumentHandler_CanHandleAsync_ShouldReturnFalseForUnsupportedTypes(string fileName, string contentType)
     {
         // Act
         var result = await _documentHandler.CanHandleAsync(fileName, contentType);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Theory]
+    [InlineData("image.jpg", "image/jpeg")]
+    [InlineData("audio.mp3", "audio/mp3")]
+    [InlineData("unknown.xyz", "application/octet-stream")]
+    public async Task VideoHandler_CanHandleAsync_ShouldReturnFalseForUnsupportedTypes(string fileName, string contentType)
+    {
+        // Act
+        var result = await _videoHandler.CanHandleAsync(fileName, contentType);
 
         // Assert
         Assert.False(result);
@@ -118,6 +155,26 @@ public class MediaHandlersTests
         Assert.Equal(fileName, result.OriginalBlobName);
         Assert.Equal(fileName, result.ProcessedBlobName);
         Assert.Equal("test content", result.TextContent);
+        _mockBlobService.Verify(x => x.UploadBlobAsync(containerName, fileName, It.IsAny<Stream>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task VideoHandler_ProcessVideoAsync_ShouldCallServices()
+    {
+        // Arrange
+        var fileName = "test.mp4";
+        var containerName = "videos";
+        var content = new MemoryStream(new byte[1024]);
+
+        // Act
+        var result = await _videoHandler.ProcessVideoAsync(containerName, fileName, content);
+
+        // Assert
+        Assert.Equal(fileName, result.OriginalBlobName);
+        Assert.Equal(fileName, result.ProcessedBlobName);
+        Assert.Null(result.ThumbnailBlobName);
+        Assert.Equal(fileName, result.Metadata.FileName);
+        Assert.Equal("video/mp4", result.Metadata.ContentType);
         _mockBlobService.Verify(x => x.UploadBlobAsync(containerName, fileName, It.IsAny<Stream>()), Times.Once);
     }
 }

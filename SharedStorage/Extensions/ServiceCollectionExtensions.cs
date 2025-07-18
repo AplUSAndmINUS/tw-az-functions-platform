@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharedStorage.Services;
 using SharedStorage.Services.Media.Handlers;
+using SharedStorage.Services.Media;
 using SharedStorage.Services.Email;
 using SharedStorage.Environment;
 using Utils;
@@ -49,6 +50,10 @@ public static class ServiceCollectionExtensions
         // Register specialized handlers
         services.AddSingleton<IDocumentHandler, DocumentHandler>();
         services.AddSingleton<IImageHandler, ImageHandler>();
+        services.AddSingleton<IVideoHandler, VideoHandler>();
+
+        // Register content reference services
+        services.AddSingleton<IMediaServiceContentReferences, MediaServiceContentReferences>();
 
         // Register BlobStorageService
         services.AddSingleton<IBlobStorageService>(sp =>
