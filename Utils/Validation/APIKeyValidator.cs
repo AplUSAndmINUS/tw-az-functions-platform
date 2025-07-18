@@ -18,12 +18,10 @@ public class ApiKeyValidator : IAPIKeyValidator
             return false;
         }
 
-        if (!string.Equals(apiKey, _validApiKey, StringComparison.Ordinal) || (apiKey != _validApiKey && apiKey.Length < 32))
+        if (apiKey.Length < 32 || !string.Equals(apiKey, _validApiKey, StringComparison.Ordinal))
         {
-          // Check if the API key is not null, empty, or too short
-          // Assuming a valid API key should be at least 32 characters long
-          _errorMessage = "Invalid API key.";
-          return false;
+            _errorMessage = "Invalid API key.";
+            return false;
         }
 
         _errorMessage = null;
