@@ -14,6 +14,9 @@ The solution is organized into the following projects:
 Contains the Azure Functions endpoint with isolated process model:
 - **BlogPosts/** - Sample ping function demonstrating platform usage
   - **Functions/** - HTTP-triggered functions  
+    - **PingFunction.cs** - Health check endpoint
+    - **QueueMessageFunction.cs** - Queue message operations
+    - **ContactFormFunction.cs** - Contact form submission handler
   - **Models/** - Data models
 - **Program.cs** - Dependency injection configuration and startup
 - **host.json** - Azure Functions host configuration
@@ -25,6 +28,9 @@ Comprehensive storage service implementations:
     - **BlobStorageService.cs** - Azure Blob Storage operations with image processing
     - **TableStorageService.cs** - Azure Table Storage operations  
     - **QueueStorageService.cs** - Azure Queue Storage operations with message management
+  - **Email/** - Email service implementation
+    - **EmailService.cs** - SMTP email service with contact form formatting
+    - **IEmailService.cs** - Email service interface
   - **CosmosDbService.cs** - Azure CosmosDB operations
   - **ImageConversionService.cs** - Image format conversion (WebP optimization)
   - **ThumbnailService.cs** - Thumbnail generation for images
@@ -64,6 +70,7 @@ Comprehensive test coverage for all platform components:
 - **CosmosDB**: NoSQL document database operations
 - **Media Processing**: Automatic image conversion to WebP format
 - **Thumbnail Generation**: Automatic thumbnail creation for uploaded images
+- **Email Service**: SMTP email service with contact form formatting and professional templates
 
 ### 📄 **Document & Media Processing**
 - **Image Processing**: Automatic WebP conversion with quality optimization
@@ -103,7 +110,24 @@ Comprehensive test coverage for all platform components:
    cd tw-az-functions-platform
    ```
 
-2. **Configure your `local.settings.json` file in the `src/Functions` directory:**
+2. **Replace placeholder values throughout the codebase:**
+
+   Before configuring and running the application, you need to replace the following placeholders with your actual values:
+
+   - `{{YOUR_DOMAIN}}` - Replace with your actual domain name (e.g., `example.com`)
+   - `{{STORAGE_ACCOUNT_NAME}}` - Replace with your Azure Storage Account name
+   - `{{DEFAULT_STORAGE_ACCOUNT_NAME}}` - Replace with your default storage account name
+   - `{{DEFAULT_COSMOS_DB_NAME}}` - Replace with your default CosmosDB account name
+   - `{{API_KEY_ENVIRONMENT_VARIABLE}}` - Replace with your preferred API key environment variable name (e.g., `API_KEY`)
+   - `{{YOUR_COMPANY_NAME}}` - Replace with your company or application name
+
+   **Important:** These placeholders appear in the following files:
+   - `Utils/Constants/ApiUrls.cs` - Update all URL endpoints
+   - `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Update default account names
+   - `SharedStorage/Services/Email/EmailService.cs` - Update default company name
+   - `src/Functions/Program.cs` - Update API key environment variable name
+
+3. **Configure your `local.settings.json` file in the `src/Functions` directory:**
 
    **For Managed Identity (Default):**
    ```json
@@ -114,7 +138,14 @@ Comprehensive test coverage for all platform components:
            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
            "StorageAccountName": "your-storage-account-name",
            "CosmosAccountName": "your-cosmos-account-name",
-           "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum"
+           "{{API_KEY_ENVIRONMENT_VARIABLE}}": "your-api-key-32-characters-minimum",
+           "SMTP_HOST": "smtp.gmail.com",
+           "SMTP_PORT": "587",
+           "SMTP_USERNAME": "your-email@gmail.com",
+           "SMTP_PASSWORD": "your-app-password",
+           "FROM_EMAIL": "your-email@gmail.com",
+           "FROM_NAME": "Your Name",
+           "TO_EMAIL": "recipient@example.com"
        }
    }
    ```
@@ -128,24 +159,31 @@ Comprehensive test coverage for all platform components:
            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
            "StorageAccountName": "your-storage-account-name",
            "CosmosAccountName": "your-cosmos-account-name",
-           "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum",
+           "{{API_KEY_ENVIRONMENT_VARIABLE}}": "your-api-key-32-characters-minimum",
            "USE_CONNECTION_STRING": "true",
-           "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net"
+           "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net",
+           "SMTP_HOST": "smtp.gmail.com",
+           "SMTP_PORT": "587",
+           "SMTP_USERNAME": "your-email@gmail.com",
+           "SMTP_PASSWORD": "your-app-password",
+           "FROM_EMAIL": "your-email@gmail.com",
+           "FROM_NAME": "Your Name",
+           "TO_EMAIL": "recipient@example.com"
        }
    }
    ```
 
-3. **Build the solution:**
+4. **Build the solution:**
    ```bash
    dotnet build
    ```
 
-4. **Run tests:**
+5. **Run tests:**
    ```bash
    dotnet test
    ```
 
-5. **Start the Functions runtime:**
+6. **Start the Functions runtime:**
    ```bash
    cd src/Functions
    func start
@@ -196,12 +234,20 @@ Uses Azure Storage connection strings for authentication. Enable this by setting
 |----------|-------------|----------|---------|
 | `StorageAccountName` | Azure Storage Account name | Yes | |
 | `CosmosAccountName` | Azure CosmosDB Account name | No* | |
-| `X_API_ENVIRONMENT_KEY` | API key for authentication | Yes | |
+| `{{API_KEY_ENVIRONMENT_VARIABLE}}` | API key for authentication | Yes | |
 | `USE_CONNECTION_STRING` | Toggle to use connection string auth | No | `false` |
 | `AZURE_STORAGE_CONNECTION_STRING` | Azure Storage connection string | No** | |
+| `SMTP_HOST` | SMTP server hostname | No*** | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port | No*** | `587` |
+| `SMTP_USERNAME` | SMTP username/email | Yes*** | |
+| `SMTP_PASSWORD` | SMTP password or app password | Yes*** | |
+| `FROM_EMAIL` | From email address | No*** | Uses `SMTP_USERNAME` |
+| `FROM_NAME` | From name for emails | No*** | `{{YOUR_COMPANY_NAME}}` |
+| `TO_EMAIL` | Default recipient email | No*** | Uses `SMTP_USERNAME` |
 
 *Required only if using CosmosDB services  
-**Required only if `USE_CONNECTION_STRING` is set to `true`
+**Required only if `USE_CONNECTION_STRING` is set to `true`  
+***Required only if using the Contact Form functionality
 
 ### Service Registration
 
@@ -219,6 +265,9 @@ services.AddSingleton<IImageService, ImageConversionService>();
 services.AddSingleton<IThumbnailService, ThumbnailService>();
 services.AddSingleton<IMediaHandler, MediaHandler>();
 services.AddSingleton<IDocumentConversionService, DocumentConversionService>();
+
+// Communication services
+services.AddScoped<IEmailService, EmailService>();
 
 // Validation and utilities
 services.AddSingleton<IAPIKeyValidator, ApiKeyValidator>();
@@ -322,6 +371,51 @@ public class MediaFunction
     }
 }
 ```
+
+### Using Contact Form Function
+
+The contact form function provides a complete email contact form solution with validation and professional formatting:
+
+```csharp
+// The function is already implemented and ready to use
+// POST /api/SubmitContactForm
+// Headers: X-API-Key: your-api-key
+// Body: { "name": "John Doe", "email": "john@example.com", "message": "Hello!" }
+
+public class ContactFormFunction
+{
+    private readonly IEmailService _emailService;
+    
+    public ContactFormFunction(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+    
+    [Function("SubmitContactForm")]
+    public async Task<HttpResponseData> SubmitContactForm(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+    {
+        // Automatically validates input, formats email, and sends to configured recipient
+        // Returns appropriate success/error responses
+    }
+}
+```
+
+**Contact Form Request Example:**
+```json
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "message": "Hello, I would like to get in touch regarding your services."
+}
+```
+
+**Email Output:**
+The service automatically formats the contact form into a professional email with:
+- Contact information (name, email, timestamp)
+- Message content with proper formatting
+- Technical details (IP address, user agent)
+- Professional email template
 
 ## Testing
 

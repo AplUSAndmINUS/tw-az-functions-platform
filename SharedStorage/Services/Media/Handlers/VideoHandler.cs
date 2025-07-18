@@ -8,6 +8,7 @@ public interface IVideoHandler
     Task<VideoProcessingResult> ProcessVideoAsync(string containerName, string fileName, Stream content);
     Task<VideoMetadata> GetVideoMetadataAsync(Stream content, string fileName);
     Task<Stream> CreateThumbnailAsync(Stream content, string fileName, int maxWidth = 300, int maxHeight = 300);
+
     Task<Stream> ConvertToWebMAsync(Stream content, string fileName);
 }
 
@@ -27,11 +28,13 @@ public record VideoMetadata(
     string? Duration = null,
     string? Codec = null,
     double? FrameRate = null
+    string? Format = null
 );
 
 public class VideoHandler : IVideoHandler
 {
     private readonly IBlobStorageService _blobStorageService;
+    private readonly IThumbnailService _thumbnailService;
     private readonly ILogger<VideoHandler> _logger;
 
     private static readonly HashSet<string> SupportedVideoTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -49,6 +52,11 @@ public class VideoHandler : IVideoHandler
         ILogger<VideoHandler> logger)
     {
         _blobStorageService = blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
+        IThumbnailService thumbnailService,
+        ILogger<VideoHandler> logger)
+    {
+        _blobStorageService = blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
+        _thumbnailService = thumbnailService ?? throw new ArgumentNullException(nameof(thumbnailService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -84,6 +92,24 @@ public class VideoHandler : IVideoHandler
             // Generate thumbnail placeholder - in a real implementation, 
             // you'd extract a frame from the video
             _logger.LogInformation("Video processing completed for: {FileName}", fileName);
+            // Upload original video
+            await _blobStorageService.UploadBlobAsync(containerName, processedBlobName, content);
+
+            // Create thumbnail from video if possible
+            content.Position = 0;
+            try
+            {
+                var thumbnailStream = await CreateThumbnailAsync(content, fileName);
+                thumbnailBlobName = $"thumbnails/{Path.GetFileNameWithoutExtension(fileName)}_thumb.webp";
+                await _blobStorageService.UploadBlobAsync(containerName, thumbnailBlobName, thumbnailStream);
+                thumbnailStream.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not create thumbnail for video: {FileName}", fileName);
+            }
+
+            _logger.LogInformation("Successfully processed video: {FileName}", fileName);
 
             return new VideoProcessingResult(
                 fileName,
@@ -116,6 +142,21 @@ public class VideoHandler : IVideoHandler
             Codec: null,
             FrameRate: null
         ));
+        var format = Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
+
+        // For now, we don't extract video dimensions or duration
+        // This could be enhanced with FFmpeg or similar video processing library
+        var metadata = new VideoMetadata(
+            fileName,
+            contentType,
+            size,
+            null, // Width - would need video processing library
+            null, // Height - would need video processing library
+            null, // Duration - would need video processing library
+            format
+        );
+
+        return Task.FromResult(metadata);
     }
 
     public Task<Stream> CreateThumbnailAsync(Stream content, string fileName, int maxWidth = 300, int maxHeight = 300)

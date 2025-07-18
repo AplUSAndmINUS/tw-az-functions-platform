@@ -16,11 +16,11 @@ public static class ServiceCollectionExtensions
     {
         var storageAccountName = configuration["StorageAccountName"]
             ?? System.Environment.GetEnvironmentVariable("StorageAccountName")
-            ?? "aztwwebsitestorage"; // Default value if not set
+            ?? "{{DEFAULT_STORAGE_ACCOUNT_NAME}}"; // Default value if not set
 
         var cosmosAccountName = configuration["CosmosAccountName"]
             ?? System.Environment.GetEnvironmentVariable("CosmosAccountName")
-            ?? "aztwwebsitecosmosdb"; // Default value if not set
+            ?? "{{DEFAULT_COSMOS_DB_NAME}}"; // Default value if not set
 
         // Check if we should use connection string authentication
         var useConnectionString = configuration["USE_CONNECTION_STRING"]?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
 
         // Register content reference services
         services.AddSingleton<IMediaServiceContentReferences, MediaServiceContentReferences>();
+
 
         // Register BlobStorageService
         services.AddSingleton<IBlobStorageService>(sp =>
