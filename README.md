@@ -110,7 +110,24 @@ Comprehensive test coverage for all platform components:
    cd tw-az-functions-platform
    ```
 
-2. **Configure your `local.settings.json` file in the `src/Functions` directory:**
+2. **Replace placeholder values throughout the codebase:**
+
+   Before configuring and running the application, you need to replace the following placeholders with your actual values:
+
+   - `{{YOUR_DOMAIN}}` - Replace with your actual domain name (e.g., `example.com`)
+   - `{{STORAGE_ACCOUNT_NAME}}` - Replace with your Azure Storage Account name
+   - `{{DEFAULT_STORAGE_ACCOUNT_NAME}}` - Replace with your default storage account name
+   - `{{DEFAULT_COSMOS_DB_NAME}}` - Replace with your default CosmosDB account name
+   - `{{API_KEY_ENVIRONMENT_VARIABLE}}` - Replace with your preferred API key environment variable name (e.g., `API_KEY`)
+   - `{{YOUR_COMPANY_NAME}}` - Replace with your company or application name
+
+   **Important:** These placeholders appear in the following files:
+   - `Utils/Constants/ApiUrls.cs` - Update all URL endpoints
+   - `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Update default account names
+   - `SharedStorage/Services/Email/EmailService.cs` - Update default company name
+   - `src/Functions/Program.cs` - Update API key environment variable name
+
+3. **Configure your `local.settings.json` file in the `src/Functions` directory:**
 
    **For Managed Identity (Default):**
    ```json
@@ -121,7 +138,7 @@ Comprehensive test coverage for all platform components:
            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
            "StorageAccountName": "your-storage-account-name",
            "CosmosAccountName": "your-cosmos-account-name",
-           "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum",
+           "{{API_KEY_ENVIRONMENT_VARIABLE}}": "your-api-key-32-characters-minimum",
            "SMTP_HOST": "smtp.gmail.com",
            "SMTP_PORT": "587",
            "SMTP_USERNAME": "your-email@gmail.com",
@@ -142,7 +159,7 @@ Comprehensive test coverage for all platform components:
            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
            "StorageAccountName": "your-storage-account-name",
            "CosmosAccountName": "your-cosmos-account-name",
-           "X_API_ENVIRONMENT_KEY": "your-api-key-32-characters-minimum",
+           "{{API_KEY_ENVIRONMENT_VARIABLE}}": "your-api-key-32-characters-minimum",
            "USE_CONNECTION_STRING": "true",
            "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net",
            "SMTP_HOST": "smtp.gmail.com",
@@ -156,17 +173,17 @@ Comprehensive test coverage for all platform components:
    }
    ```
 
-3. **Build the solution:**
+4. **Build the solution:**
    ```bash
    dotnet build
    ```
 
-4. **Run tests:**
+5. **Run tests:**
    ```bash
    dotnet test
    ```
 
-5. **Start the Functions runtime:**
+6. **Start the Functions runtime:**
    ```bash
    cd src/Functions
    func start
@@ -217,7 +234,7 @@ Uses Azure Storage connection strings for authentication. Enable this by setting
 |----------|-------------|----------|---------|
 | `StorageAccountName` | Azure Storage Account name | Yes | |
 | `CosmosAccountName` | Azure CosmosDB Account name | No* | |
-| `X_API_ENVIRONMENT_KEY` | API key for authentication | Yes | |
+| `{{API_KEY_ENVIRONMENT_VARIABLE}}` | API key for authentication | Yes | |
 | `USE_CONNECTION_STRING` | Toggle to use connection string auth | No | `false` |
 | `AZURE_STORAGE_CONNECTION_STRING` | Azure Storage connection string | No** | |
 | `SMTP_HOST` | SMTP server hostname | No*** | `smtp.gmail.com` |
@@ -225,7 +242,7 @@ Uses Azure Storage connection strings for authentication. Enable this by setting
 | `SMTP_USERNAME` | SMTP username/email | Yes*** | |
 | `SMTP_PASSWORD` | SMTP password or app password | Yes*** | |
 | `FROM_EMAIL` | From email address | No*** | Uses `SMTP_USERNAME` |
-| `FROM_NAME` | From name for emails | No*** | `TerenceWaters.com` |
+| `FROM_NAME` | From name for emails | No*** | `{{YOUR_COMPANY_NAME}}` |
 | `TO_EMAIL` | Default recipient email | No*** | Uses `SMTP_USERNAME` |
 
 *Required only if using CosmosDB services  
