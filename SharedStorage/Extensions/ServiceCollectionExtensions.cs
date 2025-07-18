@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         // Register specialized handlers
         services.AddSingleton<IDocumentHandler, DocumentHandler>();
         services.AddSingleton<IImageHandler, ImageHandler>();
+        services.AddSingleton<IVideoHandler, VideoHandler>();
 
         // Register BlobStorageService
         services.AddSingleton<IBlobStorageService>(sp =>
