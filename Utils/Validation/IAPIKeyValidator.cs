@@ -10,6 +10,14 @@ public interface IAPIKeyValidator
     bool IsValid(string apiKey);
 
     /// <summary>
+    /// Validates the provided API key asynchronously.
+    /// </summary>
+    /// <param name="apiKey">The API key to validate.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if the API key is valid; otherwise, false.</returns>
+    Task<bool> IsValidAsync(string apiKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the error message if the API key is invalid.
     /// </summary>
     /// <returns>The error message or null if the API key is valid.</returns>

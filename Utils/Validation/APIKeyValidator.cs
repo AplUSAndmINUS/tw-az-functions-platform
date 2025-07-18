@@ -30,6 +30,12 @@ public class ApiKeyValidator : IAPIKeyValidator
         return true;
     }
 
+    public async Task<bool> IsValidAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        // For the basic implementation, we can just call the synchronous version
+        return await Task.FromResult(IsValid(apiKey));
+    }
+
     public string? GetErrorMessage()
     {
         return _errorMessage;
