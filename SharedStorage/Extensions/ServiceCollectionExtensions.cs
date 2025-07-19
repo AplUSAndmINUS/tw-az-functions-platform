@@ -128,7 +128,18 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddKeyVaultServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Register Key Vault Service
-        services.AddSingleton<IKeyVaultService, KeyVaultService>();
+        services.AddSingleton<IKeyVaultService>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<KeyVaultService>>();
+            var keyVaultUrl = configuration["AZURE_KEY_VAULT_URL"] 
+                ?? System.Environment.GetEnvironmentVariable("AZURE_KEY_VAULT_URL");
+            
+            if (string.IsNullOrWhiteSpace(keyVaultUrl))
+                throw new InvalidOperationException("Required Key Vault URL 'AZURE_KEY_VAULT_URL' is not set in configuration or environment variables.");
+                
+            var credential = new Azure.Identity.DefaultAzureCredential();
+            return new KeyVaultService(keyVaultUrl, credential, logger);
+        });
 
         return services;
     }
