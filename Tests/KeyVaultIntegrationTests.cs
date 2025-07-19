@@ -19,7 +19,7 @@ public class KeyVaultIntegrationTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["AZURE_KEY_VAULT_URL"] = "https://test-vault.vault.azure.net/"
+                ["AZURE_KEY_VAULT_URL"] = "https://your-test-vault-name.vault.azure.net/" // Test placeholder URL
             })
             .Build();
 
@@ -79,7 +79,7 @@ public class KeyVaultIntegrationTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["AZURE_KEY_VAULT_URL"] = "https://test-vault.vault.azure.net/"
+                ["AZURE_KEY_VAULT_URL"] = "https://your-test-vault-name.vault.azure.net/" // Test placeholder URL
             })
             .Build();
 
