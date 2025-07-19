@@ -106,8 +106,8 @@ Comprehensive test coverage for all platform components:
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/{{YOUR_GITHUB_USERNAME}}/{{YOUR_REPOSITORY_NAME}}.git
-   cd {{YOUR_REPOSITORY_NAME}}
+   git clone https://github.com/AplUSAndmINUS/tw-az-functions-platform.git
+   cd tw-az-functions-platform
    ```
 
 2. **Replace placeholder values throughout the codebase:**
