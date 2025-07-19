@@ -1,6 +1,7 @@
 using SharedStorage.Services.Media;
 using Utils.Constants;
 using Xunit;
+using static SharedStorage.Services.Media.MediaHelpers;
 
 namespace Tests;
 
@@ -17,7 +18,7 @@ public class MediaServiceContentReferencesTests
     public void GetAssetTypeFromContentType_ReturnsCorrectAssetType(string contentType, AssetType expectedType)
     {
         // Act
-        var result = MediaServiceContentReferences.GetAssetTypeFromContentType(contentType);
+        var result = GetAssetTypeFromContentType(contentType);
 
         // Assert
         Assert.Equal(expectedType, result);
@@ -34,7 +35,7 @@ public class MediaServiceContentReferencesTests
     public void GetAssetTypeFromFileName_ReturnsCorrectAssetType(string fileName, AssetType expectedType)
     {
         // Act
-        var result = MediaServiceContentReferences.GetAssetTypeFromFileName(fileName);
+        var result = GetAssetTypeFromFileName(fileName);
 
         // Assert
         Assert.Equal(expectedType, result);
@@ -48,7 +49,7 @@ public class MediaServiceContentReferencesTests
     public void IsMediaFile_ReturnsCorrectResult(string fileName, string contentType, bool expected)
     {
         // Act
-        var result = MediaServiceContentReferences.IsMediaFile(fileName, contentType);
+        var result = IsMediaFile(fileName, contentType);
 
         // Assert
         Assert.Equal(expected, result);
@@ -58,30 +59,30 @@ public class MediaServiceContentReferencesTests
     public void MediaCategories_ContainExpectedTypes()
     {
         // Assert
-        Assert.Contains("image/jpeg", MediaServiceContentReferences.MediaCategories.ImageContentTypes);
-        Assert.Contains("video/mp4", MediaServiceContentReferences.MediaCategories.VideoContentTypes);
-        Assert.Contains("application/pdf", MediaServiceContentReferences.MediaCategories.DocumentContentTypes);
+        Assert.Contains("image/jpeg", MediaCategories.ImageContentTypes);
+        Assert.Contains("video/mp4", MediaCategories.VideoContentTypes);
+        Assert.Contains("application/pdf", MediaCategories.DocumentContentTypes);
         
-        Assert.Contains(".jpg", MediaServiceContentReferences.MediaCategories.ImageExtensions);
-        Assert.Contains(".mp4", MediaServiceContentReferences.MediaCategories.VideoExtensions);
-        Assert.Contains(".pdf", MediaServiceContentReferences.MediaCategories.DocumentExtensions);
+        Assert.Contains(".jpg", MediaCategories.ImageExtensions);
+        Assert.Contains(".mp4", MediaCategories.VideoExtensions);
+        Assert.Contains(".pdf", MediaCategories.DocumentExtensions);
     }
 
     [Fact]
     public void ContentTypes_ContainExpectedConstants()
     {
         // Assert
-        Assert.Equal("image/jpeg", MediaServiceContentReferences.ContentTypes.Images.Jpeg);
-        Assert.Equal("video/mp4", MediaServiceContentReferences.ContentTypes.Videos.Mp4);
-        Assert.Equal("application/pdf", MediaServiceContentReferences.ContentTypes.Documents.Pdf);
+        Assert.Equal("image/jpeg", ContentTypes.Images.Jpeg);
+        Assert.Equal("video/mp4", ContentTypes.Videos.Mp4);
+        Assert.Equal("application/pdf", ContentTypes.Documents.Pdf);
     }
 
     [Fact]
     public void FileExtensions_ContainExpectedConstants()
     {
         // Assert
-        Assert.Equal(".jpg", MediaServiceContentReferences.FileExtensions.Images.Jpg);
-        Assert.Equal(".mp4", MediaServiceContentReferences.FileExtensions.Videos.Mp4);
-        Assert.Equal(".pdf", MediaServiceContentReferences.FileExtensions.Documents.Pdf);
+        Assert.Equal(".jpg", FileExtensions.Images.Jpg);
+        Assert.Equal(".mp4", FileExtensions.Videos.Mp4);
+        Assert.Equal(".pdf", FileExtensions.Documents.Pdf);
     }
 }
