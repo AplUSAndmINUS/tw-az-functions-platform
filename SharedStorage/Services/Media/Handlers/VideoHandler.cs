@@ -126,31 +126,19 @@ public class VideoHandler : IVideoHandler
     {
         var contentType = GetContentTypeFromFileName(fileName);
         var size = content.Length;
+        var format = Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
 
         // Basic metadata - in a real implementation, you'd use a library like FFMpegCore
         // to extract video metadata (width, height, duration, codec, frame rate)
-        return Task.FromResult(new VideoMetadata(
-            fileName,
-            contentType,
-            size,
-            Width: null,
-            Height: null,
-            Duration: null,
-            Codec: null,
-            FrameRate: null
-        ));
-        var format = Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
-
-        // For now, we don't extract video dimensions or duration
-        // This could be enhanced with FFmpeg or similar video processing library
         var metadata = new VideoMetadata(
             fileName,
             contentType,
             size,
-            null, // Width - would need video processing library
-            null, // Height - would need video processing library
-            null, // Duration - would need video processing library
-            format
+            Width: null,  // Would need video processing library
+            Height: null, // Would need video processing library
+            Duration: null, // Would need video processing library
+            Codec: format,
+            FrameRate: null
         );
 
         return Task.FromResult(metadata);

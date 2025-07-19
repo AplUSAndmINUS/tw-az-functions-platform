@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Azure.Data.Tables;
 using Azure;
+using Utils.Constants;
 
 namespace SharedStorage.Services.Media;
 
@@ -30,6 +31,161 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
     private readonly ITableStorageService _tableStorageService;
     private readonly ConcurrentDictionary<string, HashSet<ContentReference>> _cache;
     private readonly string _tableName = "MediaContentReferences";
+
+    /// <summary>
+    /// Media categories and their associated content types and file extensions
+    /// </summary>
+    public static class MediaCategories
+    {
+        public static readonly HashSet<string> ImageContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg", "image/jpg", "image/png", "image/gif", "image/bmp", "image/webp", "image/svg+xml", "image/tiff"
+        };
+
+        public static readonly HashSet<string> VideoContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", "video/webm", "video/mkv", "video/3gp"
+        };
+
+        public static readonly HashSet<string> DocumentContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        };
+
+        public static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".tiff", ".tif"
+        };
+
+        public static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mkv", ".3gp"
+        };
+
+        public static readonly HashSet<string> DocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".txt", ".doc", ".docx", ".xls", ".xlsx"
+        };
+    }
+
+    /// <summary>
+    /// Content type constants organized by category
+    /// </summary>
+    public static class ContentTypes
+    {
+        public static class Images
+        {
+            public const string Jpeg = "image/jpeg";
+            public const string Png = "image/png";
+            public const string Gif = "image/gif";
+            public const string WebP = "image/webp";
+        }
+
+        public static class Videos
+        {
+            public const string Mp4 = "video/mp4";
+            public const string Avi = "video/avi";
+            public const string WebM = "video/webm";
+        }
+
+        public static class Documents
+        {
+            public const string Pdf = "application/pdf";
+            public const string Text = "text/plain";
+            public const string Word = "application/msword";
+        }
+    }
+
+    /// <summary>
+    /// File extension constants organized by category
+    /// </summary>
+    public static class FileExtensions
+    {
+        public static class Images
+        {
+            public const string Jpg = ".jpg";
+            public const string Png = ".png";
+            public const string Gif = ".gif";
+            public const string WebP = ".webp";
+        }
+
+        public static class Videos
+        {
+            public const string Mp4 = ".mp4";
+            public const string Avi = ".avi";
+            public const string WebM = ".webm";
+        }
+
+        public static class Documents
+        {
+            public const string Pdf = ".pdf";
+            public const string Txt = ".txt";
+            public const string Doc = ".doc";
+        }
+    }
+
+    /// <summary>
+    /// Determines the asset type from a content type
+    /// </summary>
+    /// <param name="contentType">The content type to analyze</param>
+    /// <returns>The corresponding AssetType</returns>
+    public static AssetType GetAssetTypeFromContentType(string contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+            return AssetType.Media;
+
+        if (MediaCategories.ImageContentTypes.Contains(contentType))
+            return AssetType.Images;
+
+        if (MediaCategories.VideoContentTypes.Contains(contentType))
+            return AssetType.Video;
+
+        if (MediaCategories.DocumentContentTypes.Contains(contentType))
+            return AssetType.Data;
+
+        return AssetType.Media;
+    }
+
+    /// <summary>
+    /// Determines the asset type from a file name
+    /// </summary>
+    /// <param name="fileName">The file name to analyze</param>
+    /// <returns>The corresponding AssetType</returns>
+    public static AssetType GetAssetTypeFromFileName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return AssetType.Media;
+
+        var extension = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(extension))
+            return AssetType.Media;
+
+        if (MediaCategories.ImageExtensions.Contains(extension))
+            return AssetType.Images;
+
+        if (MediaCategories.VideoExtensions.Contains(extension))
+            return AssetType.Video;
+
+        if (MediaCategories.DocumentExtensions.Contains(extension))
+            return AssetType.Data;
+
+        return AssetType.Media;
+    }
+
+    /// <summary>
+    /// Checks if a file is a media file based on its name and content type
+    /// </summary>
+    /// <param name="fileName">The file name</param>
+    /// <param name="contentType">The content type</param>
+    /// <returns>True if the file is a media file</returns>
+    public static bool IsMediaFile(string fileName, string contentType)
+    {
+        var assetTypeFromName = GetAssetTypeFromFileName(fileName);
+        var assetTypeFromContent = GetAssetTypeFromContentType(contentType);
+
+        return assetTypeFromName != AssetType.Data && assetTypeFromContent != AssetType.Data;
+    }
 
     public MediaServiceContentReferences(ITableStorageService tableStorageService)
     {
@@ -86,14 +242,14 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
             return false;
 
         // Update cache
-        var removed = false;
+        var removedFromCache = false;
         if (_cache.TryGetValue(mediaId, out var refs))
         {
             var refToRemove = refs.FirstOrDefault(r => r.ReferenceId == referenceId);
             if (refToRemove != null)
             {
                 refs.Remove(refToRemove);
-                removed = true;
+                removedFromCache = true;
                 if (!refs.Any())
                 {
                     _cache.TryRemove(mediaId, out _);
@@ -107,16 +263,18 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
             var result = await _tableStorageService.GetEntitiesAsync(_tableName, 
                 filter: $"PartitionKey eq '{mediaId}' and ReferenceId eq '{referenceId}'");
             
+            var removedFromStorage = false;
             foreach (var entity in result.Entities)
             {
                 await _tableStorageService.DeleteEntityAsync(_tableName, entity.PartitionKey, entity.RowKey);
+                removedFromStorage = true;
             }
             
-            return true;
+            return removedFromCache || removedFromStorage;
         }
         catch
         {
-            return false;
+            return removedFromCache;
         }
     }
 

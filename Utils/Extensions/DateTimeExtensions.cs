@@ -263,6 +263,16 @@ public static class DateTimeExtensions
         var ticks = (long)(dateTime.Ticks / (double)interval.Ticks) * interval.Ticks;
         return new DateTime(ticks);
     }
+
+    /// <summary>
+    /// Formats a DateTime to a blog-friendly format (e.g., "January 15, 2024")
+    /// </summary>
+    /// <param name="dateTime">The DateTime to format</param>
+    /// <returns>Blog-friendly formatted string</returns>
+    public static string ToBlogDateString(this DateTime dateTime)
+    {
+        return dateTime.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
+    }
 }
 
 /// <summary>
