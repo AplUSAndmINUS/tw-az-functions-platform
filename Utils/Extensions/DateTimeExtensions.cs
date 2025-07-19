@@ -273,6 +273,18 @@ public static class DateTimeExtensions
     {
         return dateTime.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
     }
+
+    /// <summary>
+    /// Checks if the DateTime is within the current week
+    /// </summary>
+    /// <param name="dateTime">The DateTime to check</param>
+    /// <returns>True if the date is within the current week</returns>
+    public static bool IsThisWeek(this DateTime dateTime)
+    {
+        var startOfWeek = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+        var endOfWeek = startOfWeek.AddDays(7);
+        return dateTime.Date >= startOfWeek && dateTime.Date < endOfWeek;
+    }
 }
 
 /// <summary>
