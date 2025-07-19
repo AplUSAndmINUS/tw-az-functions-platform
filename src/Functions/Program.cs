@@ -21,16 +21,8 @@ public class Program
                 // Use the new extension method to register all shared storage services
                 services.AddSharedStorageServices(configuration);
 
-                // Register APIKeyValidator
-                services.AddSingleton<IAPIKeyValidator>(sp =>
-                {
-                    var validApiKey = configuration["{{API_KEY_ENVIRONMENT_VARIABLE}}"]
-                        ?? System.Environment.GetEnvironmentVariable("{{API_KEY_ENVIRONMENT_VARIABLE}}");
-                    if (string.IsNullOrWhiteSpace(validApiKey))
-                        throw new InvalidOperationException("Missing {{API_KEY_ENVIRONMENT_VARIABLE}} in configuration.");
-
-                    return new ApiKeyValidator(validApiKey);
-                });
+                // Register API Key validation services (includes Key Vault services if configured)
+                services.AddApiKeyValidation(configuration);
 
                 // Register Application Insights telemetry
                 services.AddApplicationInsightsTelemetryWorkerService();
