@@ -49,6 +49,7 @@ public class MediaHandlersTests
         _mockVideoLogger = new Mock<ILogger<VideoHandler>>();
         _videoHandler = new VideoHandler(
             _mockBlobService.Object,
+            _mockThumbnailService.Object,
             _mockVideoLogger.Object
         );
     }
