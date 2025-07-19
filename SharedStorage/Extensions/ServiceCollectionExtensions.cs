@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SharedStorage.Services;
 using SharedStorage.Services.Media.Handlers;
 using SharedStorage.Services.Media;
+using SharedStorage.Services.Media.Platforms;
 using SharedStorage.Services.Email;
 using SharedStorage.Environment;
 using Utils;
@@ -54,6 +55,14 @@ public static class ServiceCollectionExtensions
 
         // Register content reference services
         services.AddSingleton<IMediaServiceContentReferences, MediaServiceContentReferences>();
+
+        // Register platform media adapters
+        services.AddSingleton<IPlatformMediaAdapter, FacebookPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, InstagramPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, LinkedInPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, PinterestPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, TikTokPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, YouTubePlatformAdapter>();
 
 
         // Register BlobStorageService
