@@ -32,6 +32,8 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
     private readonly ConcurrentDictionary<string, HashSet<ContentReference>> _cache;
     private readonly string _tableName = "MediaContentReferences";
 
+
+
     public MediaServiceContentReferences(ITableStorageService tableStorageService)
     {
         _tableStorageService = tableStorageService ?? throw new ArgumentNullException(nameof(tableStorageService));
@@ -87,14 +89,14 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
             return false;
 
         // Update cache
-        var removed = false;
+        var removedFromCache = false;
         if (_cache.TryGetValue(mediaId, out var refs))
         {
             var refToRemove = refs.FirstOrDefault(r => r.ReferenceId == referenceId);
             if (refToRemove != null)
             {
                 refs.Remove(refToRemove);
-                removed = true;
+                removedFromCache = true;
                 if (!refs.Any())
                 {
                     _cache.TryRemove(mediaId, out _);
@@ -108,16 +110,18 @@ public class MediaServiceContentReferences : IMediaServiceContentReferences
             var result = await _tableStorageService.GetEntitiesAsync(_tableName, 
                 filter: $"PartitionKey eq '{mediaId}' and ReferenceId eq '{referenceId}'");
             
+            var removedFromStorage = false;
             foreach (var entity in result.Entities)
             {
                 await _tableStorageService.DeleteEntityAsync(_tableName, entity.PartitionKey, entity.RowKey);
+                removedFromStorage = true;
             }
             
-            return true;
+            return removedFromCache || removedFromStorage;
         }
         catch
         {
-            return false;
+            return removedFromCache;
         }
     }
 
@@ -201,6 +205,9 @@ internal class MediaReferenceEntity : ITableEntity
     public ETag ETag { get; set; }
 }
 
+/// <summary>
+/// Content type constants organized by category
+/// </summary>
 public static class ContentTypes
 {
     public static class Images
@@ -243,6 +250,9 @@ public static class ContentTypes
     }
 }
 
+/// <summary>
+/// File extension constants organized by category
+/// </summary>
 public static class FileExtensions
 {
     public static class Images
@@ -253,6 +263,10 @@ public static class FileExtensions
         public const string Gif = ".gif";
         public const string Bmp = ".bmp";
         public const string WebP = ".webp";
+        public const string Svg = ".svg";
+        public const string Tiff = ".tiff";
+        public const string Tif = ".tif";
+        public const string Ico = ".ico";
     }
 
     public static class Videos
@@ -263,6 +277,8 @@ public static class FileExtensions
         public const string Wmv = ".wmv";
         public const string Flv = ".flv";
         public const string WebM = ".webm";
+        public const string Mkv = ".mkv";
+        public const string ThreeGp = ".3gp";
     }
 
     public static class Documents
@@ -280,6 +296,9 @@ public static class FileExtensions
     }
 }
 
+/// <summary>
+/// Media categories and their associated content types and file extensions
+/// </summary>
 public static class MediaCategories
 {
     public static readonly HashSet<string> ImageContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -289,7 +308,10 @@ public static class MediaCategories
         ContentTypes.Images.Png,
         ContentTypes.Images.Gif,
         ContentTypes.Images.Bmp,
-        ContentTypes.Images.Webp
+        ContentTypes.Images.Webp,
+        ContentTypes.Images.Svg,
+        ContentTypes.Images.Tiff,
+        ContentTypes.Images.Ico
     };
 
     public static readonly HashSet<string> VideoContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -299,7 +321,9 @@ public static class MediaCategories
         ContentTypes.Videos.Mov,
         ContentTypes.Videos.Wmv,
         ContentTypes.Videos.Flv,
-        ContentTypes.Videos.Webm
+        ContentTypes.Videos.Webm,
+        ContentTypes.Videos.Mkv,
+        ContentTypes.Videos.ThreeGp
     };
 
     public static readonly HashSet<string> DocumentContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -323,7 +347,11 @@ public static class MediaCategories
         FileExtensions.Images.Png,
         FileExtensions.Images.Gif,
         FileExtensions.Images.Bmp,
-        FileExtensions.Images.WebP
+        FileExtensions.Images.WebP,
+        FileExtensions.Images.Svg,
+        FileExtensions.Images.Tiff,
+        FileExtensions.Images.Tif,
+        FileExtensions.Images.Ico
     };
 
     public static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -333,7 +361,9 @@ public static class MediaCategories
         FileExtensions.Videos.Mov,
         FileExtensions.Videos.Wmv,
         FileExtensions.Videos.Flv,
-        FileExtensions.Videos.WebM
+        FileExtensions.Videos.WebM,
+        FileExtensions.Videos.Mkv,
+        FileExtensions.Videos.ThreeGp
     };
 
     public static readonly HashSet<string> DocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -349,47 +379,68 @@ public static class MediaCategories
         FileExtensions.Documents.Csv,
         FileExtensions.Documents.Rtf
     };
-}
 
-public static class MediaHelpers
-{
+    /// <summary>
+    /// Determines the asset type from a content type
+    /// </summary>
+    /// <param name="contentType">The content type to analyze</param>
+    /// <returns>The corresponding AssetType</returns>
     public static AssetType GetAssetTypeFromContentType(string contentType)
     {
-        if (MediaCategories.ImageContentTypes.Contains(contentType))
+        if (string.IsNullOrWhiteSpace(contentType))
+            return AssetType.Media;
+
+        if (ImageContentTypes.Contains(contentType))
             return AssetType.Images;
-        
-        if (MediaCategories.VideoContentTypes.Contains(contentType))
+
+        if (VideoContentTypes.Contains(contentType))
             return AssetType.Video;
-        
-        if (MediaCategories.DocumentContentTypes.Contains(contentType))
+
+        if (DocumentContentTypes.Contains(contentType))
             return AssetType.Data;
-        
+
         return AssetType.Media;
     }
 
+    /// <summary>
+    /// Determines the asset type from a file name
+    /// </summary>
+    /// <param name="fileName">The file name to analyze</param>
+    /// <returns>The corresponding AssetType</returns>
     public static AssetType GetAssetTypeFromFileName(string fileName)
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return AssetType.Media;
+
         var extension = Path.GetExtension(fileName);
-        
-        if (MediaCategories.ImageExtensions.Contains(extension))
+        if (string.IsNullOrWhiteSpace(extension))
+            return AssetType.Media;
+
+        if (ImageExtensions.Contains(extension))
             return AssetType.Images;
-        
-        if (MediaCategories.VideoExtensions.Contains(extension))
+
+        if (VideoExtensions.Contains(extension))
             return AssetType.Video;
-        
-        if (MediaCategories.DocumentExtensions.Contains(extension))
+
+        if (DocumentExtensions.Contains(extension))
             return AssetType.Data;
-        
+
         return AssetType.Media;
     }
 
+    /// <summary>
+    /// Checks if a file is a media file based on its name and content type
+    /// </summary>
+    /// <param name="fileName">The file name</param>
+    /// <param name="contentType">The content type</param>
+    /// <returns>True if the file is a media file</returns>
     public static bool IsMediaFile(string fileName, string contentType)
     {
         var extension = Path.GetExtension(fileName);
         
-        return MediaCategories.ImageContentTypes.Contains(contentType) ||
-               MediaCategories.VideoContentTypes.Contains(contentType) ||
-               MediaCategories.ImageExtensions.Contains(extension) ||
-               MediaCategories.VideoExtensions.Contains(extension);
+        return ImageContentTypes.Contains(contentType) ||
+               VideoContentTypes.Contains(contentType) ||
+               ImageExtensions.Contains(extension) ||
+               VideoExtensions.Contains(extension);
     }
 }

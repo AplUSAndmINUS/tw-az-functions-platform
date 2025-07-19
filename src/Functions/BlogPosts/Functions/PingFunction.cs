@@ -5,28 +5,29 @@ using System.Net;
 using Utils;
 using Utils.Validation;
 
-namespace BlogPosts
+namespace BlogPosts.Functions
 {
-  public class PlaceholderFunction
-  {
-    private readonly AppInsightsLogger _appLogger;
-    private readonly IAPIKeyValidator _apiKeyValidator;
-    public PlaceholderFunction(AppInsightsLogger appLogger, IAPIKeyValidator apiKeyValidator)
+    public class PingFunction
     {
-      _appLogger = appLogger;
-      _apiKeyValidator = apiKeyValidator;
+        private readonly AppInsightsLogger _appLogger;
+        private readonly IAPIKeyValidator _apiKeyValidator;
+        
+        public PingFunction(AppInsightsLogger appLogger, IAPIKeyValidator apiKeyValidator)
+        {
+            _appLogger = appLogger;
+            _apiKeyValidator = apiKeyValidator;
+        }
+
+        [Function("Ping")]
+        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
+        {
+            _appLogger.LogInformation("Ping function triggered.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            response.WriteString("{\"status\": \"OK\", \"message\": \"PaaS Platform is running\", \"timestamp\": \"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\"}");
+
+            return response;
+        }
     }
-
-    [Function("Ping")]
-    public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
-    {
-      _appLogger.LogInformation("Ping function triggered.");
-
-      var response = req.CreateResponse(HttpStatusCode.OK);
-      response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-      response.WriteString("OK");
-
-      return response;
-    }
-  }
 }

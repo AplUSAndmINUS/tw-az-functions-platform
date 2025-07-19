@@ -1,7 +1,7 @@
 using SharedStorage.Services.Media;
 using Utils.Constants;
 using Xunit;
-using static SharedStorage.Services.Media.MediaHelpers;
+using static SharedStorage.Services.Media.MediaCategories;
 
 namespace Tests;
 
@@ -11,7 +11,7 @@ public class MediaServiceContentReferencesTests
     [InlineData("image/jpeg", AssetType.Images)]
     [InlineData("image/png", AssetType.Images)]
     [InlineData("video/mp4", AssetType.Video)]
-    [InlineData("video/avi", AssetType.Video)]
+    [InlineData("video/x-msvideo", AssetType.Video)]
     [InlineData("application/pdf", AssetType.Data)]
     [InlineData("text/plain", AssetType.Data)]
     [InlineData("application/unknown", AssetType.Media)]
