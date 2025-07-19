@@ -4,9 +4,12 @@ using Microsoft.Extensions.Logging;
 using SharedStorage.Services;
 using SharedStorage.Services.Media.Handlers;
 using SharedStorage.Services.Media;
+using SharedStorage.Services.Media.Platforms;
 using SharedStorage.Services.Email;
 using SharedStorage.Environment;
 using Utils;
+using Utils.Services;
+using Utils.Validation;
 
 namespace SharedStorage.Extensions;
 
@@ -54,6 +57,14 @@ public static class ServiceCollectionExtensions
 
         // Register content reference services
         services.AddSingleton<IMediaServiceContentReferences, MediaServiceContentReferences>();
+
+        // Register platform media adapters
+        services.AddSingleton<IPlatformMediaAdapter, FacebookPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, InstagramPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, LinkedInPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, PinterestPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, TikTokPlatformAdapter>();
+        services.AddSingleton<IPlatformMediaAdapter, YouTubePlatformAdapter>();
 
 
         // Register BlobStorageService
@@ -104,6 +115,57 @@ public static class ServiceCollectionExtensions
 
         // Register AppInsightsLogger
         services.AddSingleton(typeof(IAppInsightsLogger<>), typeof(AppInsightsLogger<>));
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds Key Vault services to the service collection
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="configuration">The configuration</param>
+    /// <returns>The service collection</returns>
+    public static IServiceCollection AddKeyVaultServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Register Key Vault Service
+        services.AddSingleton<IKeyVaultService, KeyVaultService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds API Key validation services to the service collection
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="configuration">The configuration</param>
+    /// <returns>The service collection</returns>
+    public static IServiceCollection AddApiKeyValidation(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Register APIKeyValidator - use Key Vault validator if AZURE_KEY_VAULT_URL is configured
+        var keyVaultUrl = configuration["AZURE_KEY_VAULT_URL"] 
+            ?? System.Environment.GetEnvironmentVariable("AZURE_KEY_VAULT_URL");
+        
+        if (!string.IsNullOrWhiteSpace(keyVaultUrl))
+        {
+            // Ensure Key Vault services are registered
+            services.AddKeyVaultServices(configuration);
+            
+            // Use Key Vault-based API key validator
+            services.AddSingleton<IAPIKeyValidator, KeyVaultApiKeyValidator>();
+        }
+        else
+        {
+            // Fall back to simple API key validator
+            services.AddSingleton<IAPIKeyValidator>(sp =>
+            {
+                var validApiKey = configuration["{{API_KEY_ENVIRONMENT_VARIABLE}}"]
+                    ?? System.Environment.GetEnvironmentVariable("{{API_KEY_ENVIRONMENT_VARIABLE}}");
+                if (string.IsNullOrWhiteSpace(validApiKey))
+                    throw new InvalidOperationException("Missing {{API_KEY_ENVIRONMENT_VARIABLE}} in configuration.");
+
+                return new ApiKeyValidator(validApiKey);
+            });
+        }
 
         return services;
     }

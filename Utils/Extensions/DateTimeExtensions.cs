@@ -263,6 +263,7 @@ public static class DateTimeExtensions
         var ticks = (long)(dateTime.Ticks / (double)interval.Ticks) * interval.Ticks;
         return new DateTime(ticks);
     }
+
     /// <summary>
     /// Formats a DateTime to a blog-friendly format (e.g., "January 15, 2024")
     /// </summary>

@@ -1,5 +1,6 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using Microsoft.Extensions.Logging;
 
@@ -8,6 +9,7 @@ namespace SharedStorage.Services;
 public interface IImageService
 {
   Task<ImageConversionResult> ConvertToWebPAsync(Stream input);
+  Task<ImageConversionResult> ConvertToJpegAsync(Stream input);
 }
 
 public record ImageConversionResult(Stream Content, int Width, int Height, string Format);
@@ -72,6 +74,47 @@ public class ImageConversionService : IImageService
     {
       _logger.LogError(ex, "Error converting image to WebP format.");
       throw new InvalidOperationException("Failed to convert image to WebP format.", ex);
+    }
+  }
+
+  public async Task<ImageConversionResult> ConvertToJpegAsync(Stream input)
+  {
+    if (input == null)
+    {
+      _logger.LogError("Input stream is null. Cannot convert to JPEG.");
+      throw new ArgumentNullException(nameof(input), "Input stream cannot be null.");
+    }
+
+    try
+    {
+      // Load the image from the input stream
+      _logger.LogInformation("Loading image from input stream for JPEG conversion.");
+      input.Position = 0; // Reset stream position to the beginning
+      using var image = await Image.LoadAsync(input);
+      // remove JPG EXIF rotation if present
+      image.Mutate(x => x.AutoOrient());
+
+      _logger.LogInformation("Image loaded successfully. Dimensions: {Width}x{Height}", image.Width, image.Height);
+
+      var resizedWidth = image.Width;
+      var resizedHeight = image.Height;
+
+      // Create a memory stream to hold the converted image
+      var output = new MemoryStream();
+
+      // Save the image as JPEG
+      await image.SaveAsJpegAsync(output, new JpegEncoder { Quality = 85 });
+      
+      _logger.LogInformation("JPEG conversion completed successfully. Size: {Size} bytes", output.Length);
+      
+      output.Position = 0; // Reset stream position to the beginning for reading
+      return new ImageConversionResult(output, resizedWidth, resizedHeight, "jpeg");
+    }
+
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error converting image to JPEG format.");
+      throw new InvalidOperationException("Failed to convert image to JPEG format.", ex);
     }
   }
 }
