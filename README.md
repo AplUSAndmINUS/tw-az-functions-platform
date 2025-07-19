@@ -106,26 +106,33 @@ Comprehensive test coverage for all platform components:
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/AplUSAndmINUS/tw-az-functions-platform.git
-   cd tw-az-functions-platform
+   git clone https://github.com/{{YOUR_GITHUB_USERNAME}}/{{YOUR_REPOSITORY_NAME}}.git
+   cd {{YOUR_REPOSITORY_NAME}}
    ```
 
 2. **Replace placeholder values throughout the codebase:**
 
    Before configuring and running the application, you need to replace the following placeholders with your actual values:
 
+   - `{{YOUR_GITHUB_USERNAME}}` - Replace with your GitHub username or organization name
+   - `{{YOUR_REPOSITORY_NAME}}` - Replace with your repository name (e.g., `my-azure-functions-platform`)
    - `{{YOUR_DOMAIN}}` - Replace with your actual domain name (e.g., `example.com`)
    - `{{STORAGE_ACCOUNT_NAME}}` - Replace with your Azure Storage Account name
    - `{{DEFAULT_STORAGE_ACCOUNT_NAME}}` - Replace with your default storage account name
    - `{{DEFAULT_COSMOS_DB_NAME}}` - Replace with your default CosmosDB account name
    - `{{API_KEY_ENVIRONMENT_VARIABLE}}` - Replace with your preferred API key environment variable name (e.g., `API_KEY`)
    - `{{YOUR_COMPANY_NAME}}` - Replace with your company or application name
+   
+   **For test files specifically:**
+   - `your-test-vault-name` - Replace with your test Key Vault name (in test files only)
 
    **Important:** These placeholders appear in the following files:
+   - `README.md` - Update repository URLs and documentation
    - `Utils/Constants/ApiUrls.cs` - Update all URL endpoints
    - `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Update default account names
    - `SharedStorage/Services/Email/EmailService.cs` - Update default company name
    - `src/Functions/Program.cs` - Update API key environment variable name
+   - `Tests/KeyVaultIntegrationTests.cs` - Update test Key Vault URL (for testing only)
 
 3. **Configure your `local.settings.json` file in the `src/Functions` directory:**
 
@@ -480,7 +487,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support and questions:
-1. Check the [Issues](https://github.com/AplUSAndmINUS/tw-az-functions-platform/issues) section
+1. Check the [Issues](https://github.com/{{YOUR_GITHUB_USERNAME}}/{{YOUR_REPOSITORY_NAME}}/issues) section
 2. Create a new issue with detailed information
 3. Review the documentation and examples above
 
