@@ -2,6 +2,7 @@ using SharedStorage.Services;
 using SharedStorage.Extensions;
 using Utils;
 using Utils.Validation;
+using Utils.Services;
 using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,16 +22,31 @@ public class Program
                 // Use the new extension method to register all shared storage services
                 services.AddSharedStorageServices(configuration);
 
-                // Register APIKeyValidator
-                services.AddSingleton<IAPIKeyValidator>(sp =>
-                {
-                    var validApiKey = configuration["{{API_KEY_ENVIRONMENT_VARIABLE}}"]
-                        ?? System.Environment.GetEnvironmentVariable("{{API_KEY_ENVIRONMENT_VARIABLE}}");
-                    if (string.IsNullOrWhiteSpace(validApiKey))
-                        throw new InvalidOperationException("Missing {{API_KEY_ENVIRONMENT_VARIABLE}} in configuration.");
+                // Register Key Vault Service
+                services.AddSingleton<IKeyVaultService, KeyVaultService>();
 
-                    return new ApiKeyValidator(validApiKey);
-                });
+                // Register APIKeyValidator - use Key Vault validator if AZURE_KEY_VAULT_URL is configured
+                var keyVaultUrl = configuration["AZURE_KEY_VAULT_URL"] 
+                    ?? System.Environment.GetEnvironmentVariable("AZURE_KEY_VAULT_URL");
+                
+                if (!string.IsNullOrWhiteSpace(keyVaultUrl))
+                {
+                    // Use Key Vault-based API key validator
+                    services.AddSingleton<IAPIKeyValidator, KeyVaultApiKeyValidator>();
+                }
+                else
+                {
+                    // Fall back to simple API key validator
+                    services.AddSingleton<IAPIKeyValidator>(sp =>
+                    {
+                        var validApiKey = configuration["{{API_KEY_ENVIRONMENT_VARIABLE}}"]
+                            ?? System.Environment.GetEnvironmentVariable("{{API_KEY_ENVIRONMENT_VARIABLE}}");
+                        if (string.IsNullOrWhiteSpace(validApiKey))
+                            throw new InvalidOperationException("Missing {{API_KEY_ENVIRONMENT_VARIABLE}} in configuration.");
+
+                        return new ApiKeyValidator(validApiKey);
+                    });
+                }
 
                 // Register Application Insights telemetry
                 services.AddApplicationInsightsTelemetryWorkerService();
