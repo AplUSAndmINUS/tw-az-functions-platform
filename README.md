@@ -487,7 +487,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support and questions:
-1. Check the [Issues](https://github.com/{{YOUR_GITHUB_USERNAME}}/{{YOUR_REPOSITORY_NAME}}/issues) section
+1. Check the [Issues](https://github.com/AplUSAndmINUS/tw-az-functions-platform/issues) section
 2. Create a new issue with detailed information
 3. Review the documentation and examples above
 
