@@ -114,18 +114,25 @@ Comprehensive test coverage for all platform components:
 
    Before configuring and running the application, you need to replace the following placeholders with your actual values:
 
+   - `{{YOUR_GITHUB_USERNAME}}` - Replace with your GitHub username or organization name
+   - `{{YOUR_REPOSITORY_NAME}}` - Replace with your repository name (e.g., `my-azure-functions-platform`)
    - `{{YOUR_DOMAIN}}` - Replace with your actual domain name (e.g., `example.com`)
    - `{{STORAGE_ACCOUNT_NAME}}` - Replace with your Azure Storage Account name
    - `{{DEFAULT_STORAGE_ACCOUNT_NAME}}` - Replace with your default storage account name
    - `{{DEFAULT_COSMOS_DB_NAME}}` - Replace with your default CosmosDB account name
    - `{{API_KEY_ENVIRONMENT_VARIABLE}}` - Replace with your preferred API key environment variable name (e.g., `API_KEY`)
    - `{{YOUR_COMPANY_NAME}}` - Replace with your company or application name
+   
+   **For test files specifically:**
+   - `your-test-vault-name` - Replace with your test Key Vault name (in test files only)
 
    **Important:** These placeholders appear in the following files:
+   - `README.md` - Update repository URLs and documentation
    - `Utils/Constants/ApiUrls.cs` - Update all URL endpoints
    - `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Update default account names
    - `SharedStorage/Services/Email/EmailService.cs` - Update default company name
    - `src/Functions/Program.cs` - Update API key environment variable name
+   - `Tests/KeyVaultIntegrationTests.cs` - Update test Key Vault URL (for testing only)
 
 3. **Configure your `local.settings.json` file in the `src/Functions` directory:**
 
