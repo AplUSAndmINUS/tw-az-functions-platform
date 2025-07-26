@@ -4,7 +4,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using Microsoft.Extensions.Logging;
 
-namespace SharedStorage.Services;
+namespace SharedStorage.Services.Media;
 
 public interface IImageService
 {

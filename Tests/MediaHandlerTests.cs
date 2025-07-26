@@ -1,4 +1,6 @@
 using SharedStorage.Services;
+using SharedStorage.Services.BaseServices;
+using SharedStorage.Services.Media;
 using Microsoft.Extensions.Logging;
 using Moq;
 

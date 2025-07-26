@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharedStorage.Services;
+using SharedStorage.Services.BaseServices;
 using SharedStorage.Services.Media.Handlers;
 using SharedStorage.Services.Media;
 using SharedStorage.Services.Media.Platforms;
