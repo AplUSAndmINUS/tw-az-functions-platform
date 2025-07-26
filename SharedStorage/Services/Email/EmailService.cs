@@ -25,7 +25,7 @@ public class EmailService : IEmailService
         
         // Get SMTP configuration from environment variables
         _smtpHost = System.Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
-        _smtpPort = int.Parse(System.Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
+        _smtpPort = int.TryParse(System.Environment.GetEnvironmentVariable("SMTP_PORT"), out int port) ? port : 587;
         _smtpUsername = System.Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? throw new InvalidOperationException("SMTP_USERNAME environment variable is required");
         _smtpPassword = System.Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? throw new InvalidOperationException("SMTP_PASSWORD environment variable is required");
         _fromEmail = System.Environment.GetEnvironmentVariable("FROM_EMAIL") ?? _smtpUsername;
@@ -35,6 +35,20 @@ public class EmailService : IEmailService
 
     public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = false)
     {
+        // Validate input parameters
+        if (string.IsNullOrWhiteSpace(to))
+            throw new ArgumentException("Recipient email address cannot be null or empty", nameof(to));
+        
+        if (string.IsNullOrWhiteSpace(subject))
+            throw new ArgumentException("Email subject cannot be null or empty", nameof(subject));
+        
+        if (string.IsNullOrWhiteSpace(body))
+            throw new ArgumentException("Email body cannot be null or empty", nameof(body));
+
+        // Validate email format
+        if (!IsValidEmailAddress(to))
+            throw new ArgumentException($"Invalid email address format: {to}", nameof(to));
+
         try
         {
             _logger.LogInformation("Sending email to {To} with subject: {Subject}", to, subject);
@@ -102,5 +116,23 @@ public class EmailService : IEmailService
         sb.AppendLine("=".PadRight(60, '='));
         
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Validates if the provided email address has a valid format
+    /// </summary>
+    /// <param name="email">Email address to validate</param>
+    /// <returns>True if email format is valid, false otherwise</returns>
+    private static bool IsValidEmailAddress(string email)
+    {
+        try
+        {
+            var addr = new MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
