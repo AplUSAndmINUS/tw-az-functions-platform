@@ -4,7 +4,7 @@ using Azure;
 using Microsoft.Extensions.Logging;
 using SharedStorage.Validators;
 
-namespace SharedStorage.Services;
+namespace SharedStorage.Services.BaseServices;
 
 public class TableStorageService : ITableStorageService
 {
