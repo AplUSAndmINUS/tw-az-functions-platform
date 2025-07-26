@@ -29,7 +29,7 @@ public class Program
                 services.AddSingleton<TelemetryClient>();
 
                 // Register AppInsightsLogger
-                services.AddSingleton<AppInsightsLogger>();
+                services.AddSingleton(typeof(IAppInsightsLogger<>), typeof(AppInsightsLogger<>));
             })
             .ConfigureFunctionsWorkerDefaults()
             .Build();

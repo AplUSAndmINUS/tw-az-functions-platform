@@ -1,4 +1,5 @@
 using SharedStorage.Services;
+using SharedStorage.Services.BaseServices;
 using SharedStorage.Validators;
 using Microsoft.Extensions.Logging;
 using Moq;

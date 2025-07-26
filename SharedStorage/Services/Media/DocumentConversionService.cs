@@ -89,9 +89,56 @@ public class DocumentConversionService : IDocumentConversionService
         return "Sample extracted text"; // Default text
     }
 
+    public async Task<DocumentMetadata> GetDocumentMetadataAsync(Stream content, string fileName)
+    {
+        _logger.LogInformation("Getting metadata for document {FileName}", fileName);
+        
+        if (!IsSupportedFormat(fileName))
+        {
+            throw new NotSupportedException($"File format is not supported");
+        }
+
+        // Simulate metadata extraction
+        await Task.Delay(50);
+        
+        var pageCount = await GetPageCountAsync(content, fileName);
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        
+        return new DocumentMetadata(
+            fileName, 
+            GetMimeType(extension), 
+            content.Length, 
+            pageCount
+        );
+    }
+
+    public async Task<Stream> ConvertToTextAsync(Stream content, string fileName)
+    {
+        _logger.LogInformation("Converting document {FileName} to text", fileName);
+        
+        var text = await ExtractTextAsync(content, fileName);
+        var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
+        return new MemoryStream(textBytes);
+    }
+
     public bool IsSupportedFormat(string fileName)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         return SupportedFormats.Contains(extension);
+    }
+
+    private static string GetMimeType(string extension)
+    {
+        return extension switch
+        {
+            ".pdf" => "application/pdf",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xls" => "application/vnd.ms-excel",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".ppt" => "application/vnd.ms-powerpoint",
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            _ => "application/octet-stream"
+        };
     }
 }

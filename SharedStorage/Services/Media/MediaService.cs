@@ -46,15 +46,18 @@ public class MediaService : IMediaService
         {
             if (IsImageFile(extension))
             {
-                return await _imageHandler.ProcessImageAsync(containerName, fileName, mediaStream);
+                var result = await _imageHandler.ProcessImageAsync(containerName, fileName, mediaStream);
+                return new MediaReference(result.OriginalBlobName, result.ThumbnailBlobName ?? result.ProcessedBlobName, "", "");
             }
             else if (IsVideoFile(extension))
             {
-                return await _videoHandler.ProcessVideoAsync(containerName, fileName, mediaStream);
+                var result = await _videoHandler.ProcessVideoAsync(containerName, fileName, mediaStream);
+                return new MediaReference(result.OriginalBlobName, result.ThumbnailBlobName ?? result.ProcessedBlobName, "", "");
             }
             else if (IsDocumentFile(extension))
             {
-                return await _documentHandler.ProcessDocumentAsync(containerName, fileName, mediaStream);
+                var result = await _documentHandler.ProcessDocumentAsync(containerName, fileName, mediaStream);
+                return new MediaReference(result.OriginalBlobName, result.ProcessedBlobName, "", "");
             }
             else
             {
