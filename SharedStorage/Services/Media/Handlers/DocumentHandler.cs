@@ -105,7 +105,8 @@ public class DocumentHandler : IDocumentHandler
 
     public async Task<Stream> ConvertToTextAsync(Stream content, string fileName)
     {
-        return await _documentConversionService.ConvertToTextAsync(content, fileName);
+        var result = await _documentConversionService.ConvertToTextAsync(content, fileName);
+        return result.Content;
     }
 
     public async Task<Stream> ConvertToPdfAsync(Stream content, string fileName)

@@ -145,7 +145,7 @@ public class MediaHandlersTests
         var containerName = "documents";
         var content = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("test content"));
         
-        var metadata = new DocumentMetadata(fileName, "text/plain", content.Length);
+        var metadata = new DocumentMetadata(fileName, "text/plain", content.Length, 1);
         _mockDocumentService.Setup(x => x.GetDocumentMetadataAsync(It.IsAny<Stream>(), fileName))
             .ReturnsAsync(metadata);
         _mockDocumentService.Setup(x => x.ExtractTextAsync(It.IsAny<Stream>(), fileName))

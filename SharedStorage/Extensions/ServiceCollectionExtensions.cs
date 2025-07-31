@@ -105,7 +105,7 @@ public static class ServiceCollectionExtensions
             var blobService = sp.GetRequiredService<IBlobStorageService>();
             var imageService = sp.GetRequiredService<IImageService>();
             var thumbnailService = sp.GetRequiredService<IThumbnailService>();
-            return new MediaHandler(blobService, imageService, thumbnailService);
+            return new SharedStorage.Services.MediaHandler(blobService, imageService, thumbnailService);
         });
 
         // Register email service
