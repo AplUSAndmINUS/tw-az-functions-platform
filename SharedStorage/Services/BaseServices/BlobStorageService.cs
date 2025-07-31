@@ -4,10 +4,12 @@ using Azure.Identity;
 using Azure;
 using Microsoft.Extensions.Logging;
 using SharedStorage.Validators;
+using SharedStorage.Models;
+using SharedStorage.Services.Media;
 using Utils;
 using Utils.Constants;
 
-namespace SharedStorage.Services;
+namespace SharedStorage.Services.BaseServices;
 
 public class BlobStorageService : IBlobStorageService
 {

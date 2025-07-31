@@ -9,10 +9,10 @@ namespace BlogPosts.Functions
 {
     public class PingFunction
     {
-        private readonly AppInsightsLogger _appLogger;
+        private readonly IAppInsightsLogger<PingFunction> _appLogger;
         private readonly IAPIKeyValidator _apiKeyValidator;
         
-        public PingFunction(AppInsightsLogger appLogger, IAPIKeyValidator apiKeyValidator)
+        public PingFunction(IAppInsightsLogger<PingFunction> appLogger, IAPIKeyValidator apiKeyValidator)
         {
             _appLogger = appLogger;
             _apiKeyValidator = apiKeyValidator;

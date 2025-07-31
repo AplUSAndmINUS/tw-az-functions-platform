@@ -22,4 +22,9 @@ public interface IAPIKeyValidator
     /// </summary>
     /// <returns>The error message or null if the API key is valid.</returns>
     string? GetErrorMessage();
+
+    /// <summary>
+    /// Clears any stored error message.
+    /// </summary>
+    void ClearErrorMessage();
 }

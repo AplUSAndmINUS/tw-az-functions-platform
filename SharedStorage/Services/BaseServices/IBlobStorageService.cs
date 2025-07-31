@@ -1,6 +1,7 @@
 using Azure.Storage.Blobs;
+using SharedStorage.Models;
 
-namespace SharedStorage.Services;
+namespace SharedStorage.Services.BaseServices;
 
 public record BlobPageResult(
     IEnumerable<BlobClient> Blobs,
@@ -24,14 +25,6 @@ public record BlobDownloadResult
         ContentDisposition = contentDisposition; // Can be null if not provided
     }
 }
-
-public record BlobReference(string FileName, string CdnUrl, DateTimeOffset? LastModified = null, long? Size = null)
-{
-    public BlobReference(string fileName, string cdnUrl)
-        : this(fileName, cdnUrl, null, null) { }
-}
-
-public record MediaReference(string OriginalBlobName, string ThumbnailBlobName, string CdnUrl, string ThumbnailCdnUrl);
 
 public interface IBlobStorageService
 {

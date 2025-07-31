@@ -114,6 +114,14 @@ public class KeyVaultApiKeyValidator : IAPIKeyValidator
     {
         return _errorMessage;
     }
+
+    /// <summary>
+    /// Clears any stored error message
+    /// </summary>
+    public void ClearErrorMessage()
+    {
+        _errorMessage = null;
+    }
 }
 
 /* Usage example:

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using SharedStorage.Services.BaseServices;
+using SharedStorage.Models;
 
 namespace SharedStorage.Services.Media.Handlers;
 
@@ -103,13 +105,11 @@ public class DocumentHandler : IDocumentHandler
 
     public async Task<Stream> ConvertToTextAsync(Stream content, string fileName)
     {
-        var result = await _documentConversionService.ConvertToTextAsync(content, fileName);
-        return result.Content;
+        return await _documentConversionService.ConvertToTextAsync(content, fileName);
     }
 
     public async Task<Stream> ConvertToPdfAsync(Stream content, string fileName)
     {
-        var result = await _documentConversionService.ConvertToPdfAsync(content, fileName);
-        return result.Content;
+        return await _documentConversionService.ConvertToPdfAsync(content, fileName);
     }
 }

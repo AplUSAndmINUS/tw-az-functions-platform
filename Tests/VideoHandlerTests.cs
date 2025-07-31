@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using SharedStorage.Services;
+using SharedStorage.Services.BaseServices;
+using SharedStorage.Services.Media;
 using SharedStorage.Services.Media.Handlers;
 using Xunit;
 

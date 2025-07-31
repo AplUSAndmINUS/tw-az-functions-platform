@@ -17,6 +17,9 @@ public interface IAppInsightsLogger<T>
     void LogTableEntryDelete(string tableName, string functionName, string partitionKey, string rowKey);
     void LogBlobDownload(string containerName, string functionName, string blobName);
     void LogBlobUpload(string containerName, string functionName, string blobName, long size);
+    void LogMediaProcessing(string fileName, string operationType, TimeSpan duration, bool success);
+    void LogApiCall(string apiName, string operationType, TimeSpan duration, bool success);
+    void LogUserAction(string userId, string action, string? resource = null, Dictionary<string, string>? additionalProperties = null);
 }
 
 public class AppInsightsLogger<T> : IAppInsightsLogger<T>
@@ -153,28 +156,71 @@ public class AppInsightsLogger<T> : IAppInsightsLogger<T>
             { "Size", size.ToString() }
         });
     }
-}
 
-public class AppInsightsLogger
-{
-    private readonly ILogger<AppInsightsLogger> _logger;
-    private readonly TelemetryClient _telemetryClient;
-
-    public AppInsightsLogger(ILogger<AppInsightsLogger> logger, TelemetryClient telemetryClient)
+    public void LogMediaProcessing(string fileName, string operationType, TimeSpan duration, bool success)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
+        var properties = new Dictionary<string, string>
+        {
+            { "FileName", fileName },
+            { "OperationType", operationType },
+            { "Success", success.ToString() }
+        };
+
+        var metrics = new Dictionary<string, double>
+        {
+            { "Duration", duration.TotalMilliseconds }
+        };
+
+        _appLogger.LogInformation("Media processing: {OperationType} for {FileName} completed in {Duration}ms. Success: {Success}", 
+            operationType, fileName, duration.TotalMilliseconds, success);
+        
+        _telemetryClient.TrackEvent("MediaProcessing", properties, metrics);
     }
 
-    public void LogInformation(string message)
+    public void LogApiCall(string apiName, string operationType, TimeSpan duration, bool success)
     {
-        _logger.LogInformation(message);
-        _telemetryClient.TrackTrace(message);
+        var properties = new Dictionary<string, string>
+        {
+            { "ApiName", apiName },
+            { "OperationType", operationType },
+            { "Success", success.ToString() }
+        };
+
+        var metrics = new Dictionary<string, double>
+        {
+            { "Duration", duration.TotalMilliseconds }
+        };
+
+        _appLogger.LogInformation("API call: {OperationType} to {ApiName} completed in {Duration}ms. Success: {Success}", 
+            operationType, apiName, duration.TotalMilliseconds, success);
+        
+        _telemetryClient.TrackEvent("ApiCall", properties, metrics);
     }
 
-    public void LogError(string message, Exception ex)
+    public void LogUserAction(string userId, string action, string? resource = null, Dictionary<string, string>? additionalProperties = null)
     {
-        _logger.LogError(ex, message);
-        _telemetryClient.TrackException(ex, new Dictionary<string, string> { { "Message", message } });
+        var properties = new Dictionary<string, string>
+        {
+            { "UserId", userId },
+            { "Action", action }
+        };
+
+        if (!string.IsNullOrEmpty(resource))
+        {
+            properties["Resource"] = resource;
+        }
+
+        if (additionalProperties != null)
+        {
+            foreach (var prop in additionalProperties)
+            {
+                properties[prop.Key] = prop.Value;
+            }
+        }
+
+        _appLogger.LogInformation("User action: {UserId} performed {Action} on {Resource}", 
+            userId, action, resource ?? "unknown");
+        
+        _telemetryClient.TrackEvent("UserAction", properties);
     }
 }

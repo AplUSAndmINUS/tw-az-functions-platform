@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Azure.Data.Tables;
 using Azure;
+using SharedStorage.Services.BaseServices;
 using Utils.Constants;
 
 namespace SharedStorage.Services.Media;

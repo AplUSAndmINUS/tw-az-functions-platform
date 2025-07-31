@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
+using SharedStorage.Services.BaseServices;
+using SharedStorage.Models;
 
 namespace SharedStorage.Services.Media.Handlers;
 
