@@ -5,7 +5,7 @@ namespace SharedStorage.Services.Media;
 public class DocumentConversionService : IDocumentConversionService
 {
     private readonly ILogger<DocumentConversionService> _logger;
-    private static readonly string[] SupportedFormats = { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx" };
+    private static readonly string[] SupportedFormats = { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv" };
 
     public DocumentConversionService(ILogger<DocumentConversionService> logger)
     {
@@ -74,7 +74,7 @@ public class DocumentConversionService : IDocumentConversionService
         return 1; // Default to 1 page
     }
 
-    public async Task<string> ExtractTextAsync(Stream documentStream, string fileName)
+    public async Task<IEnumerable<string>> ExtractTextAsync(Stream documentStream, string fileName)
     {
         _logger.LogInformation("Extracting text from document {FileName}", fileName);
         
@@ -83,10 +83,25 @@ public class DocumentConversionService : IDocumentConversionService
             throw new NotSupportedException($"File format is not supported for text extraction");
         }
 
-        // Simulate text extraction
+        // For text files, read line by line
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        if (extension == ".txt" || extension == ".csv")
+        {
+            documentStream.Position = 0;
+            using var reader = new StreamReader(documentStream, leaveOpen: true);
+            var lines = new List<string>();
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                lines.Add(line);
+            }
+            return lines;
+        }
+
+        // Simulate text extraction for other formats
         await Task.Delay(100);
         
-        return "Sample extracted text"; // Default text
+        return new[] { "Sample extracted text" }; // Default text
     }
 
     public async Task<DocumentMetadata> GetDocumentMetadataAsync(Stream content, string fileName)
@@ -112,13 +127,44 @@ public class DocumentConversionService : IDocumentConversionService
         );
     }
 
-    public async Task<Stream> ConvertToTextAsync(Stream content, string fileName)
+    public async Task<DocumentConversionResult> ConvertToTextAsync(Stream content, string fileName)
     {
         _logger.LogInformation("Converting document {FileName} to text", fileName);
         
-        var text = await ExtractTextAsync(content, fileName);
+        var textLines = await ExtractTextAsync(content, fileName);
+        var text = string.Join(System.Environment.NewLine, textLines);
         var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
-        return new MemoryStream(textBytes);
+        var textStream = new MemoryStream(textBytes);
+
+        return new DocumentConversionResult(
+            "text/plain",
+            fileName,
+            textBytes.Length,
+            textStream
+        );
+    }
+
+    public Task<bool> IsDocumentAsync(string fileName, string contentType)
+    {
+        var isSupported = IsSupportedFormat(fileName);
+        
+        // Also check by content type
+        var supportedContentTypes = new[]
+        {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "text/plain",
+            "text/csv"
+        };
+
+        var contentTypeSupported = supportedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
+        
+        return Task.FromResult(isSupported || contentTypeSupported);
     }
 
     public bool IsSupportedFormat(string fileName)
@@ -138,6 +184,8 @@ public class DocumentConversionService : IDocumentConversionService
             ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".ppt" => "application/vnd.ms-powerpoint",
             ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".txt" => "text/plain",
+            ".csv" => "text/csv",
             _ => "application/octet-stream"
         };
     }

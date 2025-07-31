@@ -8,10 +8,12 @@ namespace Tests;
 public class DocumentConversionServiceTests
 {
     private readonly IDocumentConversionService _service;
+    private readonly Mock<ILogger<DocumentConversionService>> _mockLogger;
 
     public DocumentConversionServiceTests()
     {
-        _service = new DocumentConversionService();
+        _mockLogger = new Mock<ILogger<DocumentConversionService>>();
+        _service = new DocumentConversionService(_mockLogger.Object);
     }
 
     [Theory]
