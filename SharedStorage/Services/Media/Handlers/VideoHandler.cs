@@ -81,32 +81,8 @@ public class VideoHandler : IVideoHandler
             // Reset stream position
             content.Position = 0;
 
-            // For now, just upload the original video
-            // In a full implementation, you might want to:
-            // - Convert to WebM format
-            // - Compress/optimize the video
-            // - Generate thumbnail frames
-            await _blobStorageService.UploadBlobAsync(containerName, processedBlobName, content);
-
-            // Generate thumbnail placeholder - in a real implementation, 
-            // you'd extract a frame from the video
-            _logger.LogInformation("Video processing completed for: {FileName}", fileName);
             // Upload original video
             await _blobStorageService.UploadBlobAsync(containerName, processedBlobName, content);
-
-            // Create thumbnail from video if possible
-            content.Position = 0;
-            try
-            {
-                var thumbnailStream = await CreateThumbnailAsync(content, fileName);
-                thumbnailBlobName = $"thumbnails/{Path.GetFileNameWithoutExtension(fileName)}_thumb.webp";
-                await _blobStorageService.UploadBlobAsync(containerName, thumbnailBlobName, thumbnailStream);
-                thumbnailStream.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not create thumbnail for video: {FileName}", fileName);
-            }
 
             _logger.LogInformation("Successfully processed video: {FileName}", fileName);
 
@@ -139,8 +115,9 @@ public class VideoHandler : IVideoHandler
             Width: null,  // Would need video processing library
             Height: null, // Would need video processing library
             Duration: null, // Would need video processing library
-            Codec: format,
-            FrameRate: null
+            Codec: null,
+            FrameRate: null,
+            Format: format
         );
 
         return Task.FromResult(metadata);
