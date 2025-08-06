@@ -74,7 +74,7 @@ public static class DateTimeExtensions
     /// <returns>DateTime at end of day</returns>
     public static DateTime EndOfDay(this DateTime dateTime)
     {
-        return dateTime.Date.AddDays(1).AddTicks(-1);
+        return dateTime.Date.AddDays(1).AddMilliseconds(-1);
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public static class DateTimeExtensions
     /// <returns>DateTime at end of month</returns>
     public static DateTime EndOfMonth(this DateTime dateTime)
     {
-        return dateTime.StartOfMonth().AddMonths(1).AddTicks(-1);
+        return dateTime.StartOfMonth().AddMonths(1).AddMilliseconds(-1);
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public static class DateTimeExtensions
     /// <returns>DateTime at end of year</returns>
     public static DateTime EndOfYear(this DateTime dateTime)
     {
-        return dateTime.StartOfYear().AddYears(1).AddTicks(-1);
+        return dateTime.StartOfYear().AddYears(1).AddMilliseconds(-1);
     }
 
     /// <summary>
