@@ -49,6 +49,9 @@ public class EmailService : IEmailService
         if (!IsValidEmailAddress(to))
             throw new ArgumentException($"Invalid email address format: {to}", nameof(to));
 
+        var startTime = DateTime.UtcNow;
+        var success = false;
+
         try
         {
             _logger.LogInformation("Sending email to {To} with subject: {Subject}", to, subject);
@@ -70,11 +73,22 @@ public class EmailService : IEmailService
             message.To.Add(to);
 
             await client.SendMailAsync(message);
+            
+            success = true;
+            var duration = DateTime.UtcNow - startTime;
+            
             _logger.LogInformation("Email sent successfully to {To}", to);
+            
+            // Log email operation metrics for telemetry
+            _logger.LogApiCall("SMTP", "SendEmail", duration, success);
         }
         catch (Exception ex)
         {
+            var duration = DateTime.UtcNow - startTime;
             _logger.LogError("Failed to send email to {To}", ex, to);
+            
+            // Log failed email operation for telemetry
+            _logger.LogApiCall("SMTP", "SendEmail", duration, success);
             throw;
         }
     }

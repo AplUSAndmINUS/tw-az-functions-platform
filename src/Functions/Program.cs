@@ -28,6 +28,9 @@ public class Program
                 services.AddApplicationInsightsTelemetryWorkerService();
                 services.AddSingleton<TelemetryClient>();
 
+                // Register custom telemetry initializer
+                services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, CustomTelemetryInitializer>();
+
                 // Register AppInsightsLogger
                 services.AddSingleton(typeof(IAppInsightsLogger<>), typeof(AppInsightsLogger<>));
             })
