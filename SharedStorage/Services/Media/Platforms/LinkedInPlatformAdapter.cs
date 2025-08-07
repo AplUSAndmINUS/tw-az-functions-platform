@@ -55,10 +55,10 @@ public class LinkedInPlatformAdapter : IPlatformMediaAdapter
         if (metadata.ContentType.StartsWith("image/"))
         {
             // Keep original format for LinkedIn as it supports multiple formats well
-            // Create professional thumbnail
+            // Create professional thumbnail using WebP for better compression
             content.Position = 0;
-            var thumbnailStream = await _thumbnailService.GenerateJpegThumbnailAsync(content, 400, 400);
-            thumbnailBlobName = $"thumbnails/linkedin_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.jpg";
+            var thumbnailStream = await _thumbnailService.GenerateWebPThumbnailAsync(content, maxSize: 400, quality: 85);
+            thumbnailBlobName = $"thumbnails/linkedin_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.webp";
         }
 
         return new MediaProcessingResult(

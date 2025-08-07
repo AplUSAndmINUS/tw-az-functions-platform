@@ -78,7 +78,7 @@ public class MediaHandlerTests
         var thumbnailResult = new ThumbnailResult(thumbnailStream, 300, 300, "webp");
         
         _mockThumbnailService
-            .Setup(x => x.GenerateWebPThumbnailAsync(It.IsAny<Stream>()))
+            .Setup(x => x.GenerateWebPThumbnailAsync(It.IsAny<Stream>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(thumbnailResult);
 
         // Act
@@ -86,6 +86,6 @@ public class MediaHandlerTests
 
         // Assert
         Assert.Equal(thumbnailStream, result);
-        _mockThumbnailService.Verify(x => x.GenerateWebPThumbnailAsync(It.IsAny<Stream>()), Times.Once);
+        _mockThumbnailService.Verify(x => x.GenerateWebPThumbnailAsync(It.IsAny<Stream>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 }

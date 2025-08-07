@@ -57,15 +57,15 @@ public class InstagramPlatformAdapter : IPlatformMediaAdapter
             // Convert to JPEG for better compression
             if (!metadata.ContentType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase))
             {
-                var conversionResult = await _imageService.ConvertToJpegAsync(content);
+                var conversionResult = await _imageService.ConvertToOptimizedFormatAsync(content, "jpeg");
                 processedBlobName = Path.ChangeExtension(metadata.FileName, ".jpg");
                 content = conversionResult.Content;
             }
 
-            // Create Instagram-optimized thumbnail (square format)
+            // Create Instagram-optimized thumbnail (square format) using WebP for better compression
             content.Position = 0;
-            var thumbnailStream = await _thumbnailService.GenerateJpegThumbnailAsync(content, 150, 150);
-            thumbnailBlobName = $"thumbnails/instagram_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.jpg";
+            var thumbnailStream = await _thumbnailService.GenerateWebPThumbnailAsync(content, maxSize: 150, quality: 85);
+            thumbnailBlobName = $"thumbnails/instagram_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.webp";
         }
 
         return new MediaProcessingResult(

@@ -62,15 +62,15 @@ public class TikTokPlatformAdapter : IPlatformMediaAdapter
         // For images, ensure they meet TikTok's requirements
         if (metadata.ContentType.StartsWith("image/"))
         {
-            // Convert to MP4 format preferred by TikTok
-            var conversionResult = await _imageService.ConvertToJpegAsync(content);
+            // Convert to JPEG format preferred by TikTok
+            var conversionResult = await _imageService.ConvertToOptimizedFormatAsync(content, "jpeg");
             processedBlobName = Path.ChangeExtension(metadata.FileName, ".jpg");
             content = conversionResult.Content;
 
-            // Create TikTok-optimized thumbnail (vertical format)
+            // Create TikTok-optimized thumbnail (vertical format) using WebP for better compression
             content.Position = 0;
-            var thumbnailStream = await _thumbnailService.GenerateJpegThumbnailAsync(content, 270, 480); // 9:16 aspect ratio
-            thumbnailBlobName = $"thumbnails/tiktok_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.jpg";
+            var thumbnailStream = await _thumbnailService.GenerateWebPThumbnailAsync(content, maxSize: 480, quality: 85); // Vertical format
+            thumbnailBlobName = $"thumbnails/tiktok_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.webp";
         }
 
         return new MediaProcessingResult(
