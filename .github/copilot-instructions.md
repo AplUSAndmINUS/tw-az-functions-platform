@@ -2,6 +2,8 @@
 
 Azure Functions PaaS Platform is a comprehensive .NET 8 Azure Functions platform with isolated process model that provides reusable storage, image processing, email, and document conversion services for building Azure Functions applications.
 
+**This is a Platform-as-a-Service (PaaS) solution designed to provide reusable services and infrastructure. The included functions (Ping, ContactForm, QueueMessage) are for local testing and validation purposes only. Production implementations should consume the platform's services rather than adding new functions to this codebase.**
+
 **Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
 ## Working Effectively
@@ -24,15 +26,21 @@ cd tw-az-functions-platform
 dotnet restore
 # TIMEOUT: Set to 300+ seconds (5 minutes) for package restoration
 
-# Build solution - NEVER CANCEL: Takes 40 seconds typically
+# Build solution from root (for all projects) - NEVER CANCEL: Takes 40 seconds typically
 dotnet build
 # TIMEOUT: Set to 180+ seconds (3 minutes) for safety
 # NOTE: 3 nullable reference warnings are expected and non-critical
 
+# RECOMMENDED: Build from Functions directory for testing the complete platform
+cd src/Functions
+dotnet build
+# This is the primary build location for the PaaS platform testing
+
 # Run tests - NEVER CANCEL: Takes 30 seconds typically  
+cd ../../  # Back to root for tests
 dotnet test
 # TIMEOUT: Set to 120+ seconds (2 minutes) for safety
-# NOTE: 1 test failure expected (API key validation message mismatch) - 169/170 tests pass
+# NOTE: 1 test failure expected (API key validation message mismatch) - 183/184 tests pass
 ```
 
 ### Azure Functions Core Tools Installation
@@ -112,9 +120,9 @@ Core Tools Version:       4.x.x
 Function Runtime Version: 4.x.x
 
 Functions:
-  Ping: [GET] http://localhost:7071/api/Ping
-  QueueMessageFunction: [POST] http://localhost:7071/api/QueueMessage
-  SubmitContactForm: [POST] http://localhost:7071/api/SubmitContactForm
+  Ping: [GET] http://localhost:7071/Ping
+  QueueMessageFunction: [POST] http://localhost:7071/QueueMessage
+  SubmitContactForm: [POST] http://localhost:7071/SubmitContactForm
 
 Host lock lease acquired by instance ID: xxx
 ```
@@ -132,7 +140,7 @@ dotnet build
 
 # Run full test suite
 dotnet test
-# Expected: 169/170 tests pass (1 known failure is acceptable)
+# Expected: 183/184 tests pass (1 known failure is acceptable)
 # TIMEOUT: 120+ seconds
 
 # Check for compilation errors in specific projects
@@ -147,13 +155,13 @@ After starting the Functions runtime, **ALWAYS** test these endpoints:
 
 #### 1. Health Check Endpoint
 ```bash
-curl http://localhost:7071/api/Ping
+curl http://localhost:7071/Ping
 # Expected: {"status": "OK", "message": "PaaS Platform is running", "timestamp": "..."}
 ```
 
 #### 2. Contact Form (with API Key)
 ```bash
-curl -X POST http://localhost:7071/api/SubmitContactForm \
+curl -X POST http://localhost:7071/SubmitContactForm \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key-with-at-least-32-characters-minimum" \
   -d '{"name": "Test User", "email": "test@example.com", "message": "Test message"}'
@@ -162,7 +170,7 @@ curl -X POST http://localhost:7071/api/SubmitContactForm \
 
 #### 3. Queue Operations
 ```bash
-curl -X POST http://localhost:7071/api/QueueMessage \
+curl -X POST http://localhost:7071/QueueMessage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key-with-at-least-32-characters-minimum" \
   -d '{"queueName": "test-queue", "message": "Hello World"}'
@@ -184,26 +192,26 @@ dotnet format
 ## Architecture and Key Components
 
 ### Project Structure
-- **`src/Functions/`** - Azure Functions endpoints with HTTP triggers
-  - `BlogPosts/Functions/` - Function implementations (Ping, QueueMessage, ContactForm)
-  - `host.json` - Azure Functions runtime configuration
+- **`src/Functions/`** - Azure Functions endpoints with HTTP triggers (**FOR TESTING ONLY**)
+  - `BlogPosts/Functions/` - Test function implementations (Ping, QueueMessage, ContactForm)
+  - `host.json` - Azure Functions runtime configuration (routePrefix: "" removes /api)
   - `Program.cs` - Dependency injection and startup configuration
 
-- **`SharedStorage/`** - Storage service implementations
+- **`SharedStorage/`** - **CORE PaaS SERVICES** - Storage service implementations
   - `Services/BaseServices/` - Core storage services (Blob, Table, Queue, CosmosDB)
   - `Services/Email/` - SMTP email service with professional formatting
   - `Services/` - Image processing, document conversion, media handling
   - `Validators/` - Azure resource validation
   - `Extensions/` - Service registration helpers
 
-- **`Utils/`** - Utility classes and helpers
+- **`Utils/`** - **CORE PaaS UTILITIES** - Utility classes and helpers
   - `Validation/` - API key validation with Azure Key Vault integration
   - `Constants/` - Shared constant values and API URLs
   - `AppInsightsLogger.cs` - Application Insights telemetry
   - `CdnUrlBuilder.cs` - CDN URL generation
 
 - **`Tests/`** - Comprehensive xUnit test suite
-  - 170 total tests covering all major components
+  - 184 total tests covering all major components
   - 1 known failing test (API key validation message mismatch)
 
 ### Key Features Tested
@@ -265,6 +273,222 @@ Use these instead of searching or running bash commands to save time:
 - `SMTP_*` settings - Required for email functionality
 - `USE_CONNECTION_STRING` - Toggle authentication method
 
+## Security and Upgrade Management
+
+### Security Update Guidelines
+
+**CRITICAL**: All security updates must be handled gracefully with thorough testing and validation.
+
+#### Security Update Process
+1. **Assessment Phase**:
+   ```bash
+   # Check for security vulnerabilities
+   dotnet list package --vulnerable
+   dotnet list package --deprecated
+   ```
+
+2. **Testing Phase**:
+   ```bash
+   # Before applying security updates, establish baseline
+   cd src/Functions
+   dotnet build  # Must succeed
+   cd ../../
+   dotnet test   # Must show 183/184 tests passing
+   ```
+
+3. **Update Application**:
+   ```bash
+   # Update packages with security fixes
+   dotnet add package [PackageName] --version [SecureVersion]
+   # OR update all packages
+   dotnet restore --force
+   ```
+
+4. **Validation Phase**:
+   ```bash
+   # Full validation after security updates
+   dotnet clean
+   dotnet restore
+   cd src/Functions && dotnet build && cd ../..
+   dotnet test
+   # Functions runtime test
+   cd src/Functions && func start &
+   sleep 30
+   curl http://localhost:7071/Ping  # Must return OK status
+   pkill -f func
+   ```
+
+#### Critical Security Areas
+- **API Key Validation**: Minimum 32 characters, Azure Key Vault integration
+- **Storage Authentication**: Support for Managed Identity and Connection String methods
+- **SMTP Configuration**: Secure app passwords, TLS encryption
+- **Azure Identity**: Proper credential chain configuration
+
+### Bicep Package Upgrade Procedures
+
+**REQUIREMENT**: All Bicep package upgrades must be thoroughly tested and documented.
+
+#### Pre-Upgrade Checklist
+- [ ] Document current Bicep version and dependencies
+- [ ] Review breaking changes in target version
+- [ ] Backup current infrastructure templates
+- [ ] Test upgrade in isolated environment first
+
+#### Upgrade Testing Process
+1. **Infrastructure Validation**:
+   ```bash
+   # Validate current Bicep templates
+   az bicep build --file infrastructure/main.bicep
+   az deployment group validate --resource-group test-rg --template-file main.json
+   ```
+
+2. **Service Integration Testing**:
+   ```bash
+   # Test platform services after infrastructure changes
+   cd src/Functions
+   dotnet build && func start &
+   # Run full endpoint validation suite
+   curl http://localhost:7071/Ping
+   curl -X POST http://localhost:7071/QueueMessage -H "X-API-Key: test-key-with-32-characters-minimum" -d '{"queueName":"test","message":"test"}'
+   ```
+
+3. **Documentation Requirements**:
+   - Document all breaking changes and migration steps
+   - Update configuration examples
+   - Verify environment variable requirements
+   - Test both Managed Identity and Connection String authentication
+
+### Authentication Method Versatility
+
+**DESIGN PRINCIPLE**: The system must support multiple authentication methods for maximum flexibility.
+
+#### Supported Authentication Methods
+1. **Azure Managed Identity** (Recommended for Production):
+   ```json
+   {
+     "StorageAccountName": "your-storage-account",
+     "CosmosAccountName": "your-cosmos-account"
+   }
+   ```
+
+2. **Connection String Authentication** (Development/Legacy):
+   ```json
+   {
+     "USE_CONNECTION_STRING": "true",
+     "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=...",
+     "COSMOS_CONNECTION_STRING": "AccountEndpoint=https://..."
+   }
+   ```
+
+3. **API Key Authentication** (Function Access):
+   ```json
+   {
+     "API_KEY": "minimum-32-character-secure-key-for-function-access"
+   }
+   ```
+
+4. **Azure Key Vault Integration** (Secret Management):
+   ```json
+   {
+     "KEY_VAULT_URL": "https://your-keyvault.vault.azure.net/",
+     "USE_KEY_VAULT": "true"
+   }
+   ```
+
+#### Testing All Authentication Methods
+```bash
+# Test Managed Identity (requires Azure environment)
+export StorageAccountName="testaccount"
+cd src/Functions && func start
+
+# Test Connection String (local development)
+export USE_CONNECTION_STRING="true"
+export AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true"
+cd src/Functions && func start
+
+# Validate API key security
+curl -H "X-API-Key: invalid-short-key" http://localhost:7071/QueueMessage  # Should fail
+curl -H "X-API-Key: valid-32-character-minimum-length-key" http://localhost:7071/QueueMessage  # Should process
+```
+
+### Feature Development Guidelines
+
+**ROBUSTNESS vs NECESSITY**: Include features for robustness, but avoid unnecessary additions.
+
+#### Feature Inclusion Criteria
+✅ **Include if**:
+- Enhances platform reliability or security
+- Provides essential PaaS service capability
+- Improves error handling or observability
+- Supports multiple authentication methods
+- Enables better testing or validation
+
+❌ **Avoid if**:
+- Feature is application-specific rather than platform-level
+- Adds complexity without clear robustness benefit
+- Duplicates existing functionality
+- Creates tight coupling between services
+- Requires application-specific business logic
+
+#### Platform Service Examples (GOOD)
+- Storage services (Blob, Table, Queue, CosmosDB)
+- Image processing and conversion utilities
+- Email service with templating
+- Document processing capabilities
+- Authentication and validation utilities
+- Logging and monitoring integration
+
+#### Application Features Examples (AVOID)
+- Blog post management logic
+- User account management
+- Content management workflows
+- Business-specific data models
+- Application routing and navigation
+
+### Sync Evaluation with az-tw-website-functions
+
+**REQUIREMENT**: Evaluate "Sync" user stories from az-tw-website-functions repository for platform compatibility.
+
+#### Sync Evaluation Process
+1. **Repository Analysis**:
+   ```bash
+   # Compare function signatures and capabilities
+   git clone https://github.com/[org]/az-tw-website-functions.git /tmp/website-functions
+   cd /tmp/website-functions
+   find . -name "*.cs" -exec grep -l "Function\|HttpTrigger" {} \;
+   ```
+
+2. **Compatibility Assessment**:
+   - Review function patterns and dependencies
+   - Identify platform services that could be extracted
+   - Evaluate authentication method compatibility
+   - Check for PaaS-appropriate abstractions
+
+3. **Implementation Decision Matrix**:
+   | Sync Feature | Platform Service? | Implementation Required? | Testing Approach |
+   |-------------|-------------------|-------------------------|------------------|
+   | User Auth   | Yes - Auth Service | Extract to Utils/       | Full auth flow   |
+   | Blog Logic  | No - App Specific | Skip                   | N/A              |
+   | File Upload | Yes - Storage     | Enhance SharedStorage/ | Upload + validation |
+
+4. **Implementation and Testing**:
+   ```bash
+   # After extracting platform services from sync evaluation
+   cd src/Functions && dotnet build  # Must build successfully
+   cd ../../ && dotnet test          # Must maintain 183/184 test pass rate
+   cd src/Functions && func start    # Must start and serve test functions
+   # Run comprehensive platform service tests
+   ```
+
+#### Documentation Requirements for Sync Updates
+- Document extracted services and their capabilities
+- Provide migration guide for consuming applications
+- Update authentication method examples
+- Add testing scenarios for new platform services
+- Maintain backward compatibility where possible
+
+**CRITICAL**: Any sync-derived updates must maintain the PaaS nature of the platform and avoid introducing application-specific logic.
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
@@ -276,7 +500,7 @@ Use these instead of searching or running bash commands to save time:
 **Test Failure in API Key Validation**:
 - 1 test expects "Invalid API key." but gets "API key must be at least 32 characters long"
 - This is a test expectation issue, not a functional problem
-- 169/170 tests passing is acceptable
+- 183/184 tests passing is acceptable
 
 **Functions Won't Start**:
 - Ensure Azure Functions Core Tools v4 is installed
