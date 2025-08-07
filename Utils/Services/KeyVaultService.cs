@@ -23,8 +23,19 @@ public class KeyVaultService : IKeyVaultService
         
         var keyVaultUrl = EnvironmentHelper.GetRequiredEnvironmentVariable("AZURE_KEY_VAULT_URL");
         
-        // Use DefaultAzureCredential for authentication
-        var credential = new DefaultAzureCredential();
+        // Use DefaultAzureCredential with modern authentication options (consistent with storage services)
+        var options = new DefaultAzureCredentialOptions
+        {
+            ExcludeSharedTokenCacheCredential = true,
+            ExcludeVisualStudioCredential = true,
+            ExcludeAzureCliCredential = false,
+            ExcludeManagedIdentityCredential = false,
+            ExcludeEnvironmentCredential = false,
+            // All other credential types are excluded by default
+            DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+        };
+        
+        var credential = new DefaultAzureCredential(options);
         _secretClient = new SecretClient(new Uri(keyVaultUrl), credential);
         
         _logger.LogInformation("KeyVaultService initialized with URL: {KeyVaultUrl}", keyVaultUrl);

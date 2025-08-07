@@ -149,8 +149,20 @@ public static class ServiceCollectionExtensions
             
             if (string.IsNullOrWhiteSpace(keyVaultUrl))
                 throw new InvalidOperationException("Required Key Vault URL 'AZURE_KEY_VAULT_URL' is not set in configuration or environment variables.");
-                
-            var credential = new Azure.Identity.DefaultAzureCredential();
+            
+            // Use DefaultAzureCredential with modern authentication options (consistent with storage services)    
+            var options = new Azure.Identity.DefaultAzureCredentialOptions
+            {
+                ExcludeSharedTokenCacheCredential = true,
+                ExcludeVisualStudioCredential = true,
+                ExcludeAzureCliCredential = false,
+                ExcludeManagedIdentityCredential = false,
+                ExcludeEnvironmentCredential = false,
+                // All other credential types are excluded by default
+                DisableInstanceDiscovery = true // Improves performance by avoiding AAD instance discovery
+            };
+            
+            var credential = new Azure.Identity.DefaultAzureCredential(options);
             return new KeyVaultService(keyVaultUrl, credential, logger);
         });
 
