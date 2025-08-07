@@ -8,9 +8,12 @@ using SharedStorage.Services.Media;
 using SharedStorage.Services.Media.Platforms;
 using SharedStorage.Services.Email;
 using SharedStorage.Environment;
+using SharedStorage.Models;
 using Utils;
 using Utils.Services;
 using Utils.Validation;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 
 namespace SharedStorage.Extensions;
 
@@ -18,6 +21,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSharedStorageServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // Configure SixLabors.ImageSharp with security settings
+        ConfigureImageSharpSecurity(configuration);
+        
+        // Register image security configuration
+        services.Configure<ImageSecurityConfiguration>(options => 
+        {
+            configuration.GetSection("ImageSecurity").Bind(options);
+        });
+        
         var storageAccountName = configuration["StorageAccountName"]
             ?? System.Environment.GetEnvironmentVariable("StorageAccountName")
             ?? "{{DEFAULT_STORAGE_ACCOUNT_NAME}}"; // Default value if not set
@@ -180,5 +192,22 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
+    }
+    
+    /// <summary>
+    /// Configures SixLabors.ImageSharp with security-hardened settings
+    /// </summary>
+    private static void ConfigureImageSharpSecurity(IConfiguration configuration)
+    {
+        // Get security configuration or use defaults
+        var maxMemoryMB = configuration.GetSection("ImageSecurity:MaxMemoryMB").Get<int>() > 0 
+            ? configuration.GetSection("ImageSecurity:MaxMemoryMB").Get<int>() 
+            : 256;
+        
+        // Configure global ImageSharp memory limits to prevent DoS attacks
+        Configuration.Default.MemoryAllocator = MemoryAllocator.Create(new MemoryAllocatorOptions()
+        {
+            MaximumPoolSizeMegabytes = maxMemoryMB
+        });
     }
 }
