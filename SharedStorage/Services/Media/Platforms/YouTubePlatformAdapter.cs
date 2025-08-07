@@ -57,15 +57,15 @@ public class YouTubePlatformAdapter : IPlatformMediaAdapter
             // Convert to JPEG for thumbnails
             if (!metadata.ContentType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase))
             {
-                var conversionResult = await _imageService.ConvertToJpegAsync(content);
+                var conversionResult = await _imageService.ConvertToOptimizedFormatAsync(content, "jpeg");
                 processedBlobName = Path.ChangeExtension(metadata.FileName, ".jpg");
                 content = conversionResult.Content;
             }
 
-            // Create YouTube-optimized thumbnail (16:9 format)
+            // Create YouTube-optimized thumbnail (16:9 format) using WebP for better compression
             content.Position = 0;
-            var thumbnailStream = await _thumbnailService.GenerateJpegThumbnailAsync(content, 1280, 720); // 16:9 HD
-            thumbnailBlobName = $"thumbnails/youtube_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.jpg";
+            var thumbnailStream = await _thumbnailService.GenerateWebPThumbnailAsync(content, maxSize: 1280, quality: 85); 
+            thumbnailBlobName = $"thumbnails/youtube_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.webp";
         }
 
         return new MediaProcessingResult(

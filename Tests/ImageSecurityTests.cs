@@ -4,6 +4,8 @@ using SharedStorage.Models;
 using SharedStorage.Services.Media;
 using System.ComponentModel.DataAnnotations;
 using Xunit;
+using Moq;
+using Utils;
 
 namespace Tests;
 
@@ -31,15 +33,14 @@ public class ImageSecurityTests
     public void ImageConversionService_ValidatesFileSizeLimits()
     {
         // Arrange
-        var logger = new LoggerFactory().CreateLogger<ImageConversionService>();
-        var options = Options.Create(new ImageSecurityConfiguration { MaxFileSizeMB = 1 }); // 1MB limit
-        var service = new ImageConversionService(logger, options);
+        var logger = new Mock<IAppInsightsLogger<ImageConversionService>>();
+        var service = new ImageConversionService(logger.Object);
         
-        // Create a mock stream that reports 2MB size
-        var mockStream = new TestStream(2 * 1024 * 1024); // 2MB
+        // Create a mock stream that reports more than 50MB size (default limit)
+        var mockStream = new TestStream(60 * 1024 * 1024); // 60MB
         
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ValidationException>(
+        var exception = Assert.ThrowsAsync<InvalidOperationException>(
             async () => await service.ConvertToWebPAsync(mockStream));
         
         Assert.Contains("File size exceeds maximum allowed size", exception.Result.Message);
@@ -49,15 +50,15 @@ public class ImageSecurityTests
     public void ThumbnailService_ValidatesFileSizeLimits()
     {
         // Arrange
-        var logger = new LoggerFactory().CreateLogger<ThumbnailService>();
-        var options = Options.Create(new ImageSecurityConfiguration { MaxFileSizeMB = 1 }); // 1MB limit
-        var service = new ThumbnailService(logger, options);
+        var logger = new Mock<IAppInsightsLogger<ThumbnailService>>();
+        var imageService = new Mock<IImageService>();
+        var service = new ThumbnailService(logger.Object, imageService.Object);
         
-        // Create a mock stream that reports 2MB size
-        var mockStream = new TestStream(2 * 1024 * 1024); // 2MB
+        // Create a mock stream that reports more than 50MB size (default limit)
+        var mockStream = new TestStream(60 * 1024 * 1024); // 60MB
         
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ValidationException>(
+        var exception = Assert.ThrowsAsync<InvalidOperationException>(
             async () => await service.GenerateWebPThumbnailAsync(mockStream));
         
         Assert.Contains("File size exceeds maximum allowed size", exception.Result.Message);

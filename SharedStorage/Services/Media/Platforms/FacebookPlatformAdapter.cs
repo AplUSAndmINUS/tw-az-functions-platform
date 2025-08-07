@@ -57,15 +57,15 @@ public class FacebookPlatformAdapter : IPlatformMediaAdapter
             // Convert to JPEG if not already
             if (!metadata.ContentType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase))
             {
-                var conversionResult = await _imageService.ConvertToJpegAsync(content);
+                var conversionResult = await _imageService.ConvertToOptimizedFormatAsync(content, "jpeg");
                 processedBlobName = Path.ChangeExtension(metadata.FileName, ".jpg");
                 content = conversionResult.Content;
             }
 
-            // Create thumbnail
+            // Create thumbnail (using WebP for better compression by default)
             content.Position = 0;
-            var thumbnailStream = await _thumbnailService.GenerateJpegThumbnailAsync(content, 320, 320);
-            thumbnailBlobName = $"thumbnails/facebook_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.jpg";
+            var thumbnailStream = await _thumbnailService.GenerateWebPThumbnailAsync(content, maxSize: 320, quality: 85);
+            thumbnailBlobName = $"thumbnails/facebook_{Path.GetFileNameWithoutExtension(metadata.FileName)}_thumb.webp";
         }
 
         return new MediaProcessingResult(
