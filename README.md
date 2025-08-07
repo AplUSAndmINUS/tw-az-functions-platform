@@ -49,10 +49,12 @@ Universal utilities and validation components:
 - **ContentNameResolver.cs** - Container and table name resolution
 
 ### 📁 **Tests/** - Unit Testing Suite
-Comprehensive test coverage for all platform components:
+Comprehensive test coverage for all platform components (185 of 187 tests passing):
 - **ApiKeyValidatorTests.cs** - API key validation tests
 - **DocumentConversionServiceTests.cs** - Document processing tests
 - **MediaHandlerTests.cs** - Media handling tests
+- **EmailServiceKeyVaultIntegrationTests.cs** - Key Vault integration tests
+- **ImageSecurityTests.cs** - Image processing security validation tests
 
 ## Features
 
@@ -68,23 +70,26 @@ Comprehensive test coverage for all platform components:
 - **Table Storage**: Structured data operations with pagination
 - **Queue Storage**: Message queue operations with full CRUD support
 - **CosmosDB**: NoSQL document database operations
-- **Media Processing**: Automatic image conversion to WebP format
-- **Thumbnail Generation**: Automatic thumbnail creation for uploaded images
-- **Email Service**: SMTP email service with contact form formatting and professional templates
+- **Media Processing**: Automatic image conversion to WebP format with SixLabors.ImageSharp v3.1.11
+- **Thumbnail Generation**: Automatic thumbnail creation for uploaded images with enhanced security
+- **Email Service**: SMTP email service with Key Vault integration and professional templates
 
 ### 📄 **Document & Media Processing**
-- **Image Processing**: Automatic WebP conversion with quality optimization
+- **Image Processing**: Automatic WebP conversion with quality optimization and SixLabors.ImageSharp v3.1.11 compatibility
 - **Document Conversion**: Text extraction and format conversion
 - **Media Metadata**: Extraction of media file information
 - **File Type Detection**: Automatic content type detection and validation
+- **Security Features**: File size limits, dimension validation, format verification, and timeout protection
 
 ### 🛡️ **Security & Validation**
 - **Dual Authentication**: Support for both Managed Identity and Connection String authentication
+- **Key Vault Integration**: Azure Key Vault support for secure credential management (Email service)
 - **Authentication Toggle**: Environment variable to switch between authentication methods
-- **API Key Validation**: Configurable API key requirements
+- **API Key Validation**: Configurable API key requirements (minimum 32 characters)
 - **Azure Resource Validation**: Blob containers, tables, and queues
 - **Input Sanitization**: Comprehensive validation for all inputs
-- **Secure Credential Management**: Azure Identity integration
+- **Image Security**: File size limits (50MB), dimension validation (8192x8192), format verification, and processing timeouts
+- **Secure Credential Management**: Azure Identity integration with modern DefaultAzureCredential options
 
 ### 📊 **Monitoring & Logging**
 - Application Insights telemetry integration
@@ -100,7 +105,15 @@ Comprehensive test coverage for all platform components:
 - Azure Functions Core Tools v4
 - Azure Storage Account (or Azurite for local development)
 - Azure CosmosDB Account (optional, for CosmosDB features)
+- Azure Key Vault (optional, for secure credential management)
 - Visual Studio Code or Visual Studio 2022
+
+### Important Documentation
+
+Before starting, review these additional documentation files:
+- **[AZURE_AUTHENTICATION_UPDATES.md](AZURE_AUTHENTICATION_UPDATES.md)** - Latest authentication changes and credential configuration
+- **[SECURITY_CONFIGURATION.md](SECURITY_CONFIGURATION.md)** - Image processing security features and configuration
+- **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - Comprehensive development guidelines and commands
 
 ### Local Development
 
@@ -189,6 +202,7 @@ Comprehensive test coverage for all platform components:
    ```bash
    dotnet test
    ```
+   *Note: 185 of 187 tests should pass. The 2 known failing tests are related to API key validation message format and image security test configurations.*
 
 6. **Start the Functions runtime:**
    ```bash
@@ -241,20 +255,22 @@ Uses Azure Storage connection strings for authentication. Enable this by setting
 |----------|-------------|----------|---------|
 | `StorageAccountName` | Azure Storage Account name | Yes | |
 | `CosmosAccountName` | Azure CosmosDB Account name | No* | |
-| `{{API_KEY_ENVIRONMENT_VARIABLE}}` | API key for authentication | Yes | |
+| `{{API_KEY_ENVIRONMENT_VARIABLE}}` | API key for authentication (min 32 chars) | Yes | |
 | `USE_CONNECTION_STRING` | Toggle to use connection string auth | No | `false` |
 | `AZURE_STORAGE_CONNECTION_STRING` | Azure Storage connection string | No** | |
-| `SMTP_HOST` | SMTP server hostname | No*** | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP server port | No*** | `587` |
-| `SMTP_USERNAME` | SMTP username/email | Yes*** | |
-| `SMTP_PASSWORD` | SMTP password or app password | Yes*** | |
-| `FROM_EMAIL` | From email address | No*** | Uses `SMTP_USERNAME` |
-| `FROM_NAME` | From name for emails | No*** | `{{YOUR_COMPANY_NAME}}` |
-| `TO_EMAIL` | Default recipient email | No*** | Uses `SMTP_USERNAME` |
+| `AZURE_KEY_VAULT_URL` | Azure Key Vault URL for secure credentials | No*** | |
+| `SMTP_HOST` | SMTP server hostname | No**** | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port | No**** | `587` |
+| `SMTP_USERNAME` | SMTP username/email | Yes**** | |
+| `SMTP_PASSWORD` | SMTP password or app password | Yes**** | |
+| `FROM_EMAIL` | From email address | No**** | Uses `SMTP_USERNAME` |
+| `FROM_NAME` | From name for emails | No**** | `{{YOUR_COMPANY_NAME}}` |
+| `TO_EMAIL` | Default recipient email | No**** | Uses `SMTP_USERNAME` |
 
 *Required only if using CosmosDB services  
 **Required only if `USE_CONNECTION_STRING` is set to `true`  
-***Required only if using the Contact Form functionality
+***Optional - enables Key Vault integration for secure credential management  
+****Required only if using the Contact Form functionality (can be stored in Key Vault)
 
 ### Service Registration
 
@@ -274,7 +290,7 @@ services.AddSingleton<IMediaHandler, MediaHandler>();
 services.AddSingleton<IDocumentConversionService, DocumentConversionService>();
 
 // Communication services
-services.AddScoped<IEmailService, EmailService>();
+services.AddScoped<IEmailService, EmailService>(); // Now supports Key Vault integration
 
 // Validation and utilities
 services.AddSingleton<IAPIKeyValidator, ApiKeyValidator>();
@@ -447,7 +463,11 @@ dotnet test --collect:"XPlat Code Coverage"
 - ✅ Storage Service Interfaces
 - ✅ Queue Storage Service Operations
 - ✅ Queue Name Validation
+- ✅ Key Vault Integration (Email Service)
+- ✅ Image Security Validation
 - ✅ Utility Functions
+
+**Current Status**: 185 of 187 tests passing (2 known issues with test configuration)
 
 ## Contributing
 
@@ -466,18 +486,22 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ## Performance Considerations
 
-- **Image Processing**: Images are automatically converted to WebP format for optimal compression
+- **Image Processing**: Images are automatically converted to WebP format for optimal compression using SixLabors.ImageSharp v3.1.11
+- **Security Constraints**: File size limits (50MB), dimension validation (8192x8192), and processing timeouts (30 seconds)
 - **Pagination**: All list operations support pagination to handle large datasets
 - **Caching**: Consider implementing caching strategies for frequently accessed data
 - **Connection Pooling**: The platform uses Azure Identity with managed connections
+- **Memory Management**: Image processing includes memory allocation limits to prevent DoS attacks
 
 ## Security Best Practices
 
 - **Authentication Methods**: Choose between Managed Identity (recommended for production) or Connection String authentication
-- **Environment Variables**: Use environment variables for sensitive configuration like connection strings
+- **Key Vault Integration**: Use Azure Key Vault for secure credential management (SMTP, connection strings)
+- **Environment Variables**: Use environment variables for sensitive configuration when Key Vault is not available
 - **API Keys**: Use strong, randomly generated API keys (minimum 32 characters)
-- **Azure Identity**: Leverage managed identities for secure Azure service authentication
-- **Input Validation**: All inputs are validated before processing
+- **Azure Identity**: Leverage managed identities with modern DefaultAzureCredential options for secure Azure service authentication
+- **Input Validation**: All inputs are validated before processing with size and format constraints
+- **Image Security**: File size limits, dimension validation, format verification, and processing timeouts prevent abuse
 - **Error Handling**: Sensitive information is not exposed in error messages
 
 ## License
