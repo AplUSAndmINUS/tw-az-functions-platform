@@ -30,6 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="../SharedStorage/SharedStorage.csproj" />
     <ProjectReference Include="../Utils/Utils.csproj" />
+    <ProjectReference Include="../Utils/DocumentationGenerator/DocumentationGenerator.csproj" />
   </ItemGroup>
 
 </Project>

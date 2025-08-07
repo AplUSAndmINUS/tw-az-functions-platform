@@ -10,6 +10,13 @@ public class FunctionParser
     public async Task<List<FunctionMetadata>> ParseFunctionsAsync(string functionsDirectory)
     {
         var functions = new List<FunctionMetadata>();
+        
+        // Check if directory exists
+        if (!Directory.Exists(functionsDirectory))
+        {
+            return functions;
+        }
+        
         var functionFiles = Directory.GetFiles(functionsDirectory, "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains("bin") && !f.Contains("obj"));
 
