@@ -2,15 +2,18 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using Utils;
+using Utils.Services;
 
 namespace SharedStorage.Services.Email;
 
 /// <summary>
 /// Email service implementation for sending formatted emails
+/// Supports both Key Vault and environment variable authentication for SMTP credentials
 /// </summary>
 public class EmailService : IEmailService
 {
     private readonly IAppInsightsLogger<EmailService> _logger;
+    private readonly IKeyVaultService? _keyVaultService;
     private readonly string _smtpHost;
     private readonly int _smtpPort;
     private readonly string _smtpUsername;
@@ -19,18 +22,86 @@ public class EmailService : IEmailService
     private readonly string _fromName;
     private readonly string _toEmail;
 
-    public EmailService(IAppInsightsLogger<EmailService> logger)
+    public EmailService(IAppInsightsLogger<EmailService> logger, IKeyVaultService? keyVaultService = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _keyVaultService = keyVaultService;
         
-        // Get SMTP configuration from environment variables
-        _smtpHost = System.Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
-        _smtpPort = int.TryParse(System.Environment.GetEnvironmentVariable("SMTP_PORT"), out int port) ? port : 587;
-        _smtpUsername = System.Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? throw new InvalidOperationException("SMTP_USERNAME environment variable is required");
-        _smtpPassword = System.Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? throw new InvalidOperationException("SMTP_PASSWORD environment variable is required");
-        _fromEmail = System.Environment.GetEnvironmentVariable("FROM_EMAIL") ?? _smtpUsername;
-        _fromName = System.Environment.GetEnvironmentVariable("FROM_NAME") ?? "{{YOUR_COMPANY_NAME}}";
-        _toEmail = System.Environment.GetEnvironmentVariable("TO_EMAIL") ?? _smtpUsername;
+        // Initialize SMTP configuration - try Key Vault first, fallback to environment variables
+        var smtpConfig = InitializeSmtpConfigurationAsync().GetAwaiter().GetResult();
+        
+        _smtpHost = smtpConfig.Host;
+        _smtpPort = smtpConfig.Port;
+        _smtpUsername = smtpConfig.Username;
+        _smtpPassword = smtpConfig.Password;
+        _fromEmail = smtpConfig.FromEmail;
+        _fromName = smtpConfig.FromName;
+        _toEmail = smtpConfig.ToEmail;
+    }
+
+    /// <summary>
+    /// Initializes SMTP configuration from Key Vault or environment variables
+    /// </summary>
+    private async Task<SmtpConfiguration> InitializeSmtpConfigurationAsync()
+    {
+        var config = new SmtpConfiguration();
+
+        if (_keyVaultService != null)
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to retrieve SMTP configuration from Key Vault");
+
+                // Try to get SMTP configuration from Key Vault
+                config.Host = await _keyVaultService.GetSecretAsync("SMTP-HOST", "smtp.gmail.com");
+                var portSecret = await _keyVaultService.GetSecretAsync("SMTP-PORT", "587");
+                config.Port = int.TryParse(portSecret, out int port) ? port : 587;
+                config.Username = await _keyVaultService.GetSecretAsync("SMTP-USERNAME", 
+                    System.Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? 
+                    throw new InvalidOperationException("SMTP_USERNAME not found in Key Vault or environment variables"));
+                config.Password = await _keyVaultService.GetSecretAsync("SMTP-PASSWORD", 
+                    System.Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? 
+                    throw new InvalidOperationException("SMTP_PASSWORD not found in Key Vault or environment variables"));
+                config.FromEmail = await _keyVaultService.GetSecretAsync("FROM-EMAIL", config.Username);
+                config.FromName = await _keyVaultService.GetSecretAsync("FROM-NAME", "{{YOUR_COMPANY_NAME}}");
+                config.ToEmail = await _keyVaultService.GetSecretAsync("TO-EMAIL", config.Username);
+
+                _logger.LogInformation("Successfully retrieved SMTP configuration from Key Vault");
+                return config;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to retrieve SMTP configuration from Key Vault, falling back to environment variables", ex);
+            }
+        }
+
+        // Fallback to environment variables (backward compatibility)
+        _logger.LogInformation("Using SMTP configuration from environment variables");
+        config.Host = System.Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
+        config.Port = int.TryParse(System.Environment.GetEnvironmentVariable("SMTP_PORT"), out int envPort) ? envPort : 587;
+        config.Username = System.Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? 
+            throw new InvalidOperationException("SMTP_USERNAME environment variable is required");
+        config.Password = System.Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? 
+            throw new InvalidOperationException("SMTP_PASSWORD environment variable is required");
+        config.FromEmail = System.Environment.GetEnvironmentVariable("FROM_EMAIL") ?? config.Username;
+        config.FromName = System.Environment.GetEnvironmentVariable("FROM_NAME") ?? "{{YOUR_COMPANY_NAME}}";
+        config.ToEmail = System.Environment.GetEnvironmentVariable("TO_EMAIL") ?? config.Username;
+
+        return config;
+    }
+
+    /// <summary>
+    /// SMTP configuration container
+    /// </summary>
+    private class SmtpConfiguration
+    {
+        public string Host { get; set; } = string.Empty;
+        public int Port { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FromEmail { get; set; } = string.Empty;
+        public string FromName { get; set; } = string.Empty;
+        public string ToEmail { get; set; } = string.Empty;
     }
 
     public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = false)
