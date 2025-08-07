@@ -40,7 +40,7 @@ dotnet build
 cd ../../  # Back to root for tests
 dotnet test
 # TIMEOUT: Set to 120+ seconds (2 minutes) for safety
-# NOTE: 1 test failure expected (API key validation message mismatch) - 183/184 tests pass
+# NOTE: 185/187 tests pass (2 known failures are acceptable)
 ```
 
 ### Azure Functions Core Tools Installation
@@ -103,6 +103,12 @@ Add these additional settings:
 "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net"
 ```
 
+**Optional Key Vault Integration**:
+Add this setting to enable Key Vault for secure credential management:
+```json
+"AZURE_KEY_VAULT_URL": "https://your-keyvault.vault.azure.net/"
+```
+
 ### Running the Application
 
 ```bash
@@ -140,7 +146,7 @@ dotnet build
 
 # Run full test suite
 dotnet test
-# Expected: 183/184 tests pass (1 known failure is acceptable)
+# Expected: 185/187 tests pass (2 known failures are acceptable)
 # TIMEOUT: 120+ seconds
 
 # Check for compilation errors in specific projects
@@ -199,10 +205,10 @@ dotnet format
 
 - **`SharedStorage/`** - **CORE PaaS SERVICES** - Storage service implementations
   - `Services/BaseServices/` - Core storage services (Blob, Table, Queue, CosmosDB)
-  - `Services/Email/` - SMTP email service with professional formatting
-  - `Services/` - Image processing, document conversion, media handling
+  - `Services/Email/` - SMTP email service with Key Vault integration and professional formatting
+  - `Services/Media/` - Image processing (SixLabors.ImageSharp v3.1.11), document conversion, media handling
   - `Validators/` - Azure resource validation
-  - `Extensions/` - Service registration helpers
+  - `Extensions/` - Service registration helpers with Key Vault support
 
 - **`Utils/`** - **CORE PaaS UTILITIES** - Utility classes and helpers
   - `Validation/` - API key validation with Azure Key Vault integration
@@ -211,20 +217,23 @@ dotnet format
   - `CdnUrlBuilder.cs` - CDN URL generation
 
 - **`Tests/`** - Comprehensive xUnit test suite
-  - 184 total tests covering all major components
-  - 1 known failing test (API key validation message mismatch)
+  - 187 total tests covering all major components
+  - 185 tests passing, 2 known failures (API key validation message format, image security test configuration)
 
 ### Key Features Tested
 - **Storage Operations**: Blob upload/download, Table CRUD, Queue messaging, CosmosDB documents
-- **Image Processing**: WebP conversion, thumbnail generation, metadata extraction
-- **Email Service**: Contact form processing with professional email templates
+- **Image Processing**: WebP conversion with SixLabors.ImageSharp v3.1.11, thumbnail generation, metadata extraction
+- **Email Service**: Contact form processing with Key Vault integration and professional email templates
 - **Document Processing**: Text extraction, format conversion
-- **Security**: API key validation, Azure Identity authentication
+- **Security**: API key validation, Azure Identity authentication, image security validation
+- **Key Vault Integration**: Secure credential management for SMTP and other services
 
 ### Configuration Requirements
 - **API Keys**: Must be minimum 32 characters long
 - **Storage**: Supports both Managed Identity and Connection String authentication
-- **Email**: SMTP configuration required for contact form functionality
+- **Email**: SMTP configuration required for contact form functionality (supports Key Vault)
+- **Key Vault**: Optional Azure Key Vault integration for secure credential management
+- **Image Security**: File size limits (50MB), dimension validation (8192x8192), processing timeouts (30 seconds)
 - **CosmosDB**: Optional, only required for document storage features
 
 ## Performance and Timing Expectations
@@ -252,25 +261,30 @@ Use these instead of searching or running bash commands to save time:
 ├── src/Functions/              # Azure Functions project
 ├── SharedStorage/              # Storage services library  
 ├── Utils/                      # Utility classes
-├── Tests/                      # xUnit test project
+├── Tests/                      # xUnit test project (185/187 tests passing)
 ├── README.md                   # Comprehensive documentation
+├── AZURE_AUTHENTICATION_UPDATES.md # Latest authentication changes
+├── SECURITY_CONFIGURATION.md   # Image processing security features
 ├── tw-az-functions-platform.sln # Main solution file
 ├── .prettierrc                 # Code formatting config
 └── .vscode/extensions.json     # Recommended VS Code extensions
 ```
 
 #### Key Files Always Check After Changes
-- `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Service registration
+- `SharedStorage/Extensions/ServiceCollectionExtensions.cs` - Service registration (includes Key Vault integration)
 - `src/Functions/Program.cs` - DI configuration and startup
 - `Utils/Constants/ApiUrls.cs` - API endpoint definitions
-- `SharedStorage/Services/Email/EmailService.cs` - Email functionality
-- `Tests/` - Always run tests after service changes
+- `SharedStorage/Services/Email/EmailService.cs` - Email functionality with Key Vault support
+- `SharedStorage/Services/Media/ImageConversionService.cs` - ImageSharp v3.1.11 compatibility
+- `SharedStorage/Services/Media/ThumbnailService.cs` - Enhanced thumbnail generation
+- `Tests/` - Always run tests after service changes (185/187 passing expected)
 
 #### Required Environment Variables
 - `StorageAccountName` - Azure Storage account name
 - `CosmosAccountName` - CosmosDB account name (optional)
 - `API_KEY` - Minimum 32 characters
-- `SMTP_*` settings - Required for email functionality
+- `AZURE_KEY_VAULT_URL` - Key Vault URL for secure credentials (optional)
+- `SMTP_*` settings - Required for email functionality (can be in Key Vault)
 - `USE_CONNECTION_STRING` - Toggle authentication method
 
 ## Security and Upgrade Management
