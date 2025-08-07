@@ -120,8 +120,32 @@ public static class ServiceCollectionExtensions
             return new SharedStorage.Services.MediaHandler(blobService, imageService, thumbnailService);
         });
 
-        // Register email service
-        services.AddScoped<IEmailService, EmailService>();
+        // Register email service with Key Vault support when available
+        services.AddScoped<IEmailService>(sp =>
+        {
+            var logger = sp.GetRequiredService<IAppInsightsLogger<EmailService>>();
+            
+            // Try to get Key Vault service if configured
+            var keyVaultUrl = configuration["AZURE_KEY_VAULT_URL"] 
+                ?? System.Environment.GetEnvironmentVariable("AZURE_KEY_VAULT_URL");
+            
+            IKeyVaultService? keyVaultService = null;
+            if (!string.IsNullOrWhiteSpace(keyVaultUrl))
+            {
+                try
+                {
+                    keyVaultService = sp.GetService<IKeyVaultService>();
+                }
+                catch (Exception ex)
+                {
+                    // Log warning but continue without Key Vault
+                    var tempLogger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<EmailService>>();
+                    tempLogger.LogWarning(ex, "Key Vault service not available for EmailService, using environment variables");
+                }
+            }
+            
+            return new EmailService(logger, keyVaultService);
+        });
 
         // Register environment services
         services.AddScoped<IAppMode, DefaultAppMode>();
